@@ -102,7 +102,7 @@ static string read_from_me_info(Client& client) {
 	// Get id in form of boost::uuids::uuid and set the client's name and uuid.
 	UUID id = getUuidFromString(client_id);
 	client.setName(client_name);
-	client.setUuid(id); 
+	client.setUuid(id);
 
 	// Close the file and return the private key (encoded in base64).
 	info_file.close();
