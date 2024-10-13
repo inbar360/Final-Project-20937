@@ -9,21 +9,6 @@ bool is_integer(const std::string& num) {
 	return !num.empty() && iterator == num.end();
 }
 
-int response_payload_sizes(int response_code) {
-	switch (response_code) {
-		case 1601: case 1607: 
-			return 0;
-		case 1600: case 1604: case 1606:
-			return 16;
-		case 1602: case 1605:
-			return 160; // Need to check if this is correct!
-		case 1603:
-			return 279;
-		default:
-			return 0;
-	}
-}
-
 uint16_t get_response_code(std::vector<uint8_t> header) {
 	uint8_t high = header[1], low = header[2];
 	uint16_t combined = (static_cast<uint16_t>(high) << 8) | low;

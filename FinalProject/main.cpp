@@ -6,7 +6,7 @@ using namespace std;
 static bool validTransfer(Client &client, string ip_port, string name, string file_path) {
 	size_t pos = ip_port.find(':');
 
-	if (pos == string::npos || name.length() > 100 || name.length() == 0 || file_path.length() == 0) {
+	if (pos == string::npos || name.length() > MAX_NAME_LENGTH || name.length() == 0 || file_path.length() == 0) {
 		return false;
 	}
 
@@ -27,7 +27,7 @@ static bool validTransfer(Client &client, string ip_port, string name, string fi
 }
 
 static Client createClient() {
-	string transfer_path = EXE_DIR_FILE_PATH("transfer.info.txt");
+	string transfer_path = EXE_DIR_FILE_PATH("transfer.info");
 	string line, ip_port, client_name, client_file_path;
 	ifstream transfer_file(transfer_path);
 	int lines = 1, invalid_file_data = 0;
@@ -69,7 +69,7 @@ static Client createClient() {
 }
 
 static string read_from_me_info(Client& client) {
-	string path_info = EXE_DIR_FILE_PATH("me.info.txt");
+	string path_info = EXE_DIR_FILE_PATH("me.info");
 	string line, client_name, client_id, private_key;
 	int lines = 1;
 	ifstream info_file(path_info);
@@ -96,7 +96,7 @@ static string read_from_me_info(Client& client) {
 		lines++;
 	}
 
-	if (lines != 4 || client_name.length() > 100 || client_name.length() == 0 || client_id.length() != 32 || private_key.length() == 0) {
+	if (lines != 4 || client_name.length() > MAX_NAME_LENGTH || client_name.length() == 0 || client_id.length() != HEX_ID_LENGTH || private_key.length() == 0) {
 		throw std::invalid_argument("Error: me.info file contains invalid data.");
 	}
 	// Get id in form of boost::uuids::uuid and set the client's name and uuid.
@@ -116,8 +116,8 @@ static void save_to_files(string name, UUID uuid, string priv_key) {
 	id.erase(remove(id.begin(), id.end(), '-'), id.end()); // Remove '-' from the string.
 
 	string base64PrivKey = Base64Wrapper::encode(priv_key);
-	string path_info = EXE_DIR_FILE_PATH("me.info.txt");
-	string path_key = EXE_DIR_FILE_PATH("priv.key.txt");
+	string path_info = EXE_DIR_FILE_PATH("me.info");
+	string path_key = EXE_DIR_FILE_PATH("priv.key");
 	ofstream info_file(path_info), key_file(path_key);
 
 	if (!info_file.is_open()) {
@@ -140,7 +140,7 @@ static void run_client(tcp::socket &sock, Client& client) {
 	string private_key, decrypted_aes_key;
 
 	// If me.info does not exist, send Registration request.
-	if (!filesystem::exists(EXE_DIR_FILE_PATH("me.info.txt"))) {
+	if (!filesystem::exists(EXE_DIR_FILE_PATH("me.info"))) {
 		Registration registration(client.getUuid(), Codes::REGISTRATION_C, PayloadSize::REGISTRATION_P, client.getName().c_str());
 		op_success = registration.run(sock);
 
@@ -182,6 +182,18 @@ static void run_client(tcp::socket &sock, Client& client) {
 		// Get the encrypted AES key and decrypt it.
 		string encrypted_aes_key = reconnection.getEncryptedAesKey();
 		decrypted_aes_key = prevKeyWrapper.decrypt(encrypted_aes_key);
+	}
+	AESWrapper aesKeyWrapper(reinterpret_cast<const unsigned char *>(decrypted_aes_key.c_str()), decrypted_aes_key.size());
+	int times_sent = 0;
+	while (times_sent != 3) {
+
+	}
+	if (times_sent == 3) {
+		InvalidCrcDone invalid_crc_done(client.getUuid(), Codes::INVALID_CRC_DONE_C, PayloadSize::INVALID_CRC_DONE_P, client.getFilePath().c_str());
+		invalid_crc_done.run(sock);
+	}
+	else {
+		ValidCrc valid_crc(client.getUuid(), Codes::VALID_CRC_C, PayloadSize::VALID_CRC_P, client.getFilePath().c_str());
 	}
 }
 

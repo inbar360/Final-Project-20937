@@ -61,6 +61,9 @@ class SendingFile : Request {
 	uint16_t packet_number;
 	uint16_t total_packets;
 	// save message content somehow.
+
+	std::string getCksum() const;
+
 	char cksum[4];
 };
 

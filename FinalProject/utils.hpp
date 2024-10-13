@@ -13,6 +13,7 @@
 #include <string.h>
 #include "RSAWrapper.h"
 #include "Base64Wrapper.h"
+#include "AESWrapper.h"
 
 using boost::asio::ip::tcp;
 using UUID = boost::uuids::uuid;
@@ -25,12 +26,13 @@ constexpr auto NAME_LENGTH = 255;
 constexpr auto PUBLIC_KEY_LENGTH = 160;
 constexpr auto REQUEST_HEADER_SIZE = 23;
 constexpr auto RESPONSE_HEADER_SIZE = 7;
+constexpr auto MAX_NAME_LENGTH = 100;
+constexpr auto HEX_ID_LENGTH = 32;
 #define FATAL_MESSAGE_RETURN(type) \
 	cerr << "Fatal: " << type << " request failed.\n"; \
 	return;
 
 bool is_integer(const std::string& s);
-int response_payload_sizes(int response_code);
 uint16_t get_response_code(std::vector<uint8_t> header);
 uint32_t get_response_payload_size(std::vector<uint8_t> header);
 bool id_vectors_match(std::vector<uint8_t> first, UUID second);

@@ -79,7 +79,7 @@ bool Registration::run(tcp::socket &sock) {
 			size_t length = boost::asio::read(sock, boost::asio::buffer(response_payload, response_payload_size));
 
 			// If the code is not success, the payload_size for the code is not the same as the size received in the header, or the length of the payload is not the wanted length, print error.
-			if (response_code != Codes::REGISTRATION_SUCCEEDED_C || response_payload_size != response_payload_sizes(response_code) || length != response_payload_size) {
+			if (response_code != Codes::REGISTRATION_SUCCEEDED_C || response_payload_size != PayloadSize::REGISTRATION_SUCCEEDED_P || length != response_payload_size) {
 				throw std::invalid_argument("server responded with an error.");
 			}
 			// The Registration succeeded, set the uuid to the id the server responded with.
@@ -138,6 +138,7 @@ SendingPublicKey::SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_si
 	memset(this->encrypted_aes_key, 0, sizeof(this->encrypted_aes_key));
 }
 
+// Getting the encrypted AES key received by the server in string form.
 std::string SendingPublicKey::getEncryptedAesKey() const {
 	std::string str_key(this->encrypted_aes_key);
 	return str_key;
@@ -164,7 +165,7 @@ bool SendingPublicKey::run(tcp::socket& sock) {
 			size_t length = boost::asio::read(sock, boost::asio::buffer(response_payload, response_payload_size));
 
 			// If the code is not success, the payload_size for the code is not the same as the size received in the header, or the length of the payload is not the wanted length, print error.
-			if (response_code != Codes::PUBLIC_KEY_RECEIVED_C || response_payload_size != response_payload_sizes(response_code) || length != response_payload_size) {
+			if (response_code != Codes::PUBLIC_KEY_RECEIVED_C || response_payload_size != PayloadSize::PUBLIC_KEY_RECEIVED_P || length != response_payload_size) {
 				throw std::invalid_argument("server responded with an error.");
 			}
 
@@ -221,6 +222,7 @@ Reconnection::Reconnection(UUID uuid, uint16_t code, uint32_t payload_size, cons
 	memset(this->encrypted_aes_key, 0, sizeof(this->encrypted_aes_key));
 }
 
+// Getting the encrypted AES key received by the server in string form.
 std::string Reconnection::getEncryptedAesKey() const {
 	std::string str_key(this->encrypted_aes_key);
 	return str_key;
@@ -247,7 +249,7 @@ bool Reconnection::run(tcp::socket &sock) {
 			size_t length = boost::asio::read(sock, boost::asio::buffer(response_payload, response_payload_size));
 
 			// If the code is not success, the payload_size for the code is not the same as the size received in the header, or the length of the payload is not the wanted length, print error.
-			if (response_code != Codes::RECONNECTION_SUCCEEDED_C || response_payload_size != response_payload_sizes(response_code) || length != response_payload_size) {
+			if (response_code != Codes::RECONNECTION_SUCCEEDED_C || response_payload_size != PayloadSize::RECONNECTION_SUCCEEDED_P || length != response_payload_size) {
 				throw std::invalid_argument("server responded with an error.");
 			}
 
@@ -290,6 +292,12 @@ std::vector<uint8_t> Reconnection::pack_reconnection_request() {
 
 
 
+// Getting the cksum received by the server in string form.
+std::string SendingFile::getCksum() const {
+	std::string str_cksum(this->cksum);
+	return str_cksum;
+}
+
 
 ValidCrc::ValidCrc(UUID uuid, uint16_t code, uint32_t payload_size, const char file_name[]) :
 	Request(uuid, code, payload_size)
@@ -323,7 +331,7 @@ bool ValidCrc::run(tcp::socket &sock) {
 			size_t length = boost::asio::read(sock, boost::asio::buffer(response_payload, response_payload_size));
 
 			// If the code is not success, the payload_size for the code is not the same as the size received in the header, or the length of the payload is not the wanted length, print error.
-			if (response_code != Codes::MESSAGE_RECEIVED_C || response_payload_size != response_payload_sizes(response_code) || length != response_payload_size) {
+			if (response_code != Codes::MESSAGE_RECEIVED_C || response_payload_size != PayloadSize::MESSAGE_RECEIVED_P || length != response_payload_size) {
 				throw std::invalid_argument("server responded with an error.");
 			}
 
@@ -374,7 +382,17 @@ SendingCrcAgain::SendingCrcAgain(UUID uuid, uint16_t code, uint32_t payload_size
 }
 
 bool SendingCrcAgain::run(tcp::socket &sock) {
+	// Pack request fields into vector.
+	std::vector<uint8_t> request = pack_sending_crc_again_request();
 
+	try {
+		// Send the request to the server via the provided socket.
+		boost::asio::write(sock, boost::asio::buffer(request));
+	}
+	catch (std::exception& e) {
+		std::cerr << "server repsonded with an error." << std::endl;
+		return false;
+	}
 
 	return true;
 }
@@ -402,9 +420,52 @@ InvalidCrcDone::InvalidCrcDone(UUID uuid, uint16_t code, uint32_t payload_size, 
 	strncpy_s(this->file_name, file_name, amt);
 }
 
+// TODO: go over this and change to fit this request.
 bool InvalidCrcDone::run(tcp::socket &sock) {
+	// Pack request fields into vector and initialize parameter times_sent to 0.
+	int times_sent = 0;
+	std::vector<uint8_t> request = pack_invalid_crc_done_request();
 
+	while (times_sent != 3) {
+		try {
+			// Send the request to the server via the provided socket.
+			boost::asio::write(sock, boost::asio::buffer(request));
 
+			// Receive header from the server, get response code and payload_size
+			std::vector<uint8_t> response_header(RESPONSE_HEADER_SIZE);
+			boost::asio::read(sock, boost::asio::buffer(response_header, RESPONSE_HEADER_SIZE));
+			uint16_t response_code = get_response_code(response_header);
+			uint32_t response_payload_size = get_response_payload_size(response_header);
+
+			// Receive payload from the server, save it's length in a parameter length.
+			std::vector<uint8_t> response_payload(response_payload_size);
+			size_t length = boost::asio::read(sock, boost::asio::buffer(response_payload, response_payload_size));
+
+			// If the code is not success, the payload_size for the code is not the same as the size received in the header, or the length of the payload is not the wanted length, print error.
+			if (response_code != Codes::MESSAGE_RECEIVED_C || response_payload_size != PayloadSize::MESSAGE_RECEIVED_P || length != response_payload_size) {
+				throw std::invalid_argument("server responded with an error.");
+			}
+
+			// Copy the id from the payload, and check if it's the correct client id.
+			std::vector<uint8_t> payload_id(sizeof(uuid));
+			std::copy(response_payload.begin(), response_payload.begin() + sizeof(uuid), payload_id.begin());
+			if (!id_vectors_match(payload_id, uuid)) {
+				throw std::invalid_argument("server responded with an error.");
+			}
+			// If the id provided by the server is correct, break from the loop and return true.
+			break;
+		}
+		catch (std::exception& e) {
+			std::cerr << e.what() << std::endl;
+		}
+		// Increment the i by 1 each iteration.
+		times_sent++;
+	}
+	// If the i reached 3, return false.
+	if (times_sent == 3) {
+		return false;
+	}
+	// If the client succeeded, return true.
 	return true;
 }
 
