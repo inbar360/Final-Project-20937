@@ -1,6 +1,33 @@
-﻿  testing.cpp
+﻿  AESWrapper.cpp
+  Base64Wrapper.cpp
+  RSAWrapper.cpp
+  client.cpp
   Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
   - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
   - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
   Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
-  FinalProject.vcxproj -> C:\Users\inbar\source\repos\FinalProject\x64\Debug\FinalProject.exe
+  main.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+C:\Users\inbar\source\repos\FinalProject\FinalProject\main.cpp(186,117): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+  request.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+C:\Users\inbar\source\repos\FinalProject\FinalProject\request.cpp(400,25): warning C4101: 'e': unreferenced local variable
+  testing.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+  utils.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+  Generating Code...
+C:\Users\inbar\source\repos\FinalProject\FinalProject\request.cpp(307,1): error C4716: 'SendingFile::pack_valid_crc_request': must return a value
+C:\Users\inbar\source\repos\FinalProject\FinalProject\request.cpp(303,1): error C4716: 'SendingFile::run': must return a value

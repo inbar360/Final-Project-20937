@@ -2,7 +2,6 @@
 #define CLIENT_H
 
 #include "utils.hpp"
-#include "cryptlib.h"
 
 class Client {
 	std::string address;

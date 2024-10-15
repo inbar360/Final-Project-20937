@@ -60,11 +60,20 @@ class SendingFile : Request {
 	uint32_t orig_file_size;
 	uint16_t packet_number;
 	uint16_t total_packets;
-	// save message content somehow.
-
-	std::string getCksum() const;
-
+	char file_name[255];
+	std::string encrypted_file_content;
+	char encrypted_content[CONTENT_SIZE_PER_PACKET];
 	char cksum[4];
+
+	public:
+		SendingFile(UUID uuid, uint16_t code, uint32_t payload_size, uint32_t content_size, uint32_t orig_file_size, uint16_t total_packets, const char file_name[], std::string encrypted_file_content);
+		void setEncryptedContent(const char encrypted_content[]);
+		std::string getEncryptedContent() const;
+		std::string getCksum() const;
+
+		bool run(tcp::socket& sock);
+		std::vector<uint8_t> pack_sending_file_request();
+		uint32_t getPayloadContentSize(std::vector<uint8_t> payload);
 };
 
 class ValidCrc : Request {

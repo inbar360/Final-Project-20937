@@ -14,6 +14,7 @@
 #include "RSAWrapper.h"
 #include "Base64Wrapper.h"
 #include "AESWrapper.h"
+#include "cksum.hpp"
 
 using boost::asio::ip::tcp;
 using UUID = boost::uuids::uuid;
@@ -21,6 +22,14 @@ using UUID = boost::uuids::uuid;
 const std::string EXE_DIR = "client.cpp\\..\\..\\x64\\debug";
 #define EXE_DIR_FILE_PATH(file_name) (EXE_DIR + "\\" + file_name)
 #define NIL_UUID boost::uuids::nil_uuid()
+#define FATAL_MESSAGE_RETURN(type) \
+	cerr << "Fatal: " << type << " request failed.\n"; \
+	return;
+#define TOTAL_PACKETS(content_size) \
+	((content_size % CONTENT_SIZE_PER_PACKET) ? (content_size/CONTENT_SIZE_PER_PACKET + 1) : content_size/CONTENT_SIZE_PER_PACKET)
+#define MIN(x, y) \
+	((x > y) ? x : y)
+
 constexpr auto VERSION = 3;
 constexpr auto NAME_LENGTH = 255;
 constexpr auto PUBLIC_KEY_LENGTH = 160;
@@ -28,21 +37,23 @@ constexpr auto REQUEST_HEADER_SIZE = 23;
 constexpr auto RESPONSE_HEADER_SIZE = 7;
 constexpr auto MAX_NAME_LENGTH = 100;
 constexpr auto HEX_ID_LENGTH = 32;
-#define FATAL_MESSAGE_RETURN(type) \
-	cerr << "Fatal: " << type << " request failed.\n"; \
-	return;
+constexpr auto CONTENT_SIZE_PER_PACKET = 1024;
+constexpr auto MAX_FAILS = 3;
 
 bool is_integer(const std::string& s);
 uint16_t get_response_code(std::vector<uint8_t> header);
 uint32_t get_response_payload_size(std::vector<uint8_t> header);
 bool id_vectors_match(std::vector<uint8_t> first, UUID second);
+bool file_names_match(std::string response_file_name, char file_name[]);
 UUID getUuidFromString(std::string client_id);
+int getFileSize(std::string file_name);
+std::string fileToString(std::string file_name);
 
 enum PayloadSize: uint32_t {
 	REGISTRATION_P = 255,
 	SENDING_PUBLIC_KEY_P = 415,
 	RECONNECTION_P = 255,
-	SENDING_FILE_P = 343,
+	SENDING_FILE_P = 1291,
 	VALID_CRC_P = 255,
 	SENDING_CRC_AGAIN_P = 255,
 	INVALID_CRC_DONE_P = 255,

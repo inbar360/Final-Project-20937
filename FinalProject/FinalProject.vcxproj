@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClCompile Include="AESWrapper.cpp" />
     <ClCompile Include="Base64Wrapper.cpp" />
+    <ClCompile Include="cksum.cpp" />
     <ClCompile Include="client.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="request.cpp" />
@@ -147,6 +148,7 @@
   <ItemGroup>
     <ClInclude Include="AESWrapper.h" />
     <ClInclude Include="Base64Wrapper.h" />
+    <ClInclude Include="cksum.hpp" />
     <ClInclude Include="client.hpp" />
     <ClInclude Include="request.hpp" />
     <ClInclude Include="RSAWrapper.h" />

@@ -21,7 +21,7 @@ uint32_t get_response_payload_size(std::vector<uint8_t> header) {
 	uint8_t first = header[3], second = header[4];
 	uint8_t third = header[5], last = header[6];
 
-	uint32_t combined = (static_cast<uint16_t>(first) << 24) | (static_cast<uint16_t>(second) << 16) | (static_cast<uint16_t>(third) << 8) | last;
+	uint32_t combined = (static_cast<uint32_t>(first) << 24) | (static_cast<uint32_t>(second) << 16) | (static_cast<uint32_t>(third) << 8) | last;
 
 	uint32_t native_code = boost::endian::little_to_native(combined);
 	return native_code;
@@ -34,6 +34,12 @@ bool id_vectors_match(std::vector<uint8_t> first, UUID second) {
 	}
 
 	return true;
+}
+
+bool file_names_match(std::string response_file_name, char file_name[]) {
+	std::string file_name_str(file_name);
+
+	return response_file_name == file_name_str;
 }
 
 UUID getUuidFromString(std::string client_id) {
@@ -54,4 +60,35 @@ UUID getUuidFromString(std::string client_id) {
 	}
 
 	return id;
+}
+
+int getFileSize(std::string file_name) {
+	std::string file_path = EXE_DIR_FILE_PATH(file_name);
+
+	// Opening the file in binary mode and going to its end.
+	std::ifstream file(file_path, std::ios::binary | std::ios::ate); 
+	if (file.is_open()) {
+		// Getting the position of the end of the file, meaning, its size.
+		std::streampos size = file.tellg();  
+		file.close();
+		// Returning the size of the file in bytes.
+		return static_cast<int>(size); 
+	}
+
+	// Returning -1 if the file did not open.
+	return -1; 
+}
+
+std::string fileToString(std::string file_name) {
+	std::string file_path = EXE_DIR_FILE_PATH(file_name);
+	std::ifstream file(file_path, std::ios::binary);
+
+	if (file.is_open()) {
+		std::ostringstream oss;
+		oss << file.rdbuf();
+		file.close();
+		return oss.str();
+	}
+
+	throw std::runtime_error("The client's file did not open, aborting program.");
 }

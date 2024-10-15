@@ -39,6 +39,9 @@
     <ClCompile Include="testing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cksum.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="client.hpp">
@@ -57,6 +60,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RSAWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cksum.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
