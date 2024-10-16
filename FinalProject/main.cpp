@@ -173,7 +173,8 @@ static void run_client(tcp::socket &sock, Client& client) {
 		if (!op_success) {
 			FATAL_MESSAGE_RETURN("Registration");
 		}
-
+		// Set client's new UUID.
+		client.setUuid(registration.getUuid());
 		// Create RSA pair, save fields data into me.info and prev.key files, and send a SendingPublicKey request.
 		RSAPrivateWrapper prevKeyWrapper;
 		string public_key = prevKeyWrapper.getPublicKey();
