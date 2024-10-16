@@ -52,7 +52,7 @@ Registration::Registration(UUID uuid, uint16_t code, uint32_t payload_size, cons
 {
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(name);
-	size_t amt = (len >= NAME_LENGTH) ? (NAME_LENGTH - 1) : len;
+	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->name, 0, sizeof(this->name));
 	strncpy_s(this->name, name, amt);
@@ -109,7 +109,7 @@ bool Registration::run(tcp::socket &sock) {
 	This method packs the header and payload for the registration request in a form of uint8_t vector.
 	All numeric fields are ordered by little endian order.
 */
-std::vector<uint8_t> Registration::pack_registration_request() {
+std::vector<uint8_t> Registration::pack_registration_request() const {
 	std::vector<uint8_t> req = pack_header();
 	
 	std::copy(name, name + sizeof(name), req.begin() + REQUEST_HEADER_SIZE);
@@ -122,14 +122,14 @@ SendingPublicKey::SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_si
 {
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(name);
-	size_t amt = (len >= NAME_LENGTH) ? (NAME_LENGTH - 1) : len;
+	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->name, 0, sizeof(this->name));
 	strncpy_s(this->name, name, amt);
 
 	// Fill this->public_key with null terminator, then copy a max of 160 chars from the provided public key.
 	len = strlen(public_key);
-	amt = (len > PUBLIC_KEY_LENGTH) ? PUBLIC_KEY_LENGTH : len;
+	amt = (len > KEY_LENGTH) ? KEY_LENGTH : len;
 
 	memset(this->public_key, 0, sizeof(this->public_key));
 	strncpy_s(this->public_key, public_key, amt);
@@ -198,7 +198,7 @@ bool SendingPublicKey::run(tcp::socket& sock) {
 	This method packs the header and payload for the sending public key request in a form of uint8_t vector.
 	All numeric fields are ordered by little endian order.
 */
-std::vector<uint8_t> SendingPublicKey::pack_sending_public_key_request() {
+std::vector<uint8_t> SendingPublicKey::pack_sending_public_key_request() const {
 	std::vector<uint8_t> req = pack_header();
 
 	std::copy(name, name + sizeof(name), req.begin() + REQUEST_HEADER_SIZE);
@@ -212,7 +212,7 @@ Reconnection::Reconnection(UUID uuid, uint16_t code, uint32_t payload_size, cons
 {
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(name);
-	size_t amt = (len >= NAME_LENGTH) ? (NAME_LENGTH - 1) : len;
+	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->name, 0, sizeof(this->name));
 	strncpy_s(this->name, name, amt);
@@ -280,7 +280,7 @@ bool Reconnection::run(tcp::socket &sock) {
 	This method packs the header and payload for the reconnection request in a form of uint8_t vector.
 	All numeric fields are ordered by little endian order.
 */
-std::vector<uint8_t> Reconnection::pack_reconnection_request() {
+std::vector<uint8_t> Reconnection::pack_reconnection_request() const {
 	std::vector<uint8_t> req = pack_header();
 
 	std::copy(name, name + sizeof(name), req.begin() + REQUEST_HEADER_SIZE);
@@ -298,7 +298,7 @@ SendingFile::SendingFile(UUID uuid, uint16_t code, uint32_t payload_size, uint32
 {
 	// Fill this->file_name with null terminator, then copy a max of 254 chars from the provided file_name.
 	size_t len = strlen(file_name);
-	size_t amt = (len >= NAME_LENGTH) ? (NAME_LENGTH - 1) : len;
+	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->file_name, 0, sizeof(this->file_name));
 	strncpy_s(this->file_name, file_name, amt);
@@ -394,7 +394,7 @@ bool SendingFile::run(tcp::socket& sock) {
 	return true;
 }
 
-std::vector<uint8_t> SendingFile::pack_sending_file_request() {
+std::vector<uint8_t> SendingFile::pack_sending_file_request() const {
 	std::vector<uint8_t> req = pack_header();
 
 	// Saving the numeric types that are of size larger than one byte in little endian order.
@@ -435,7 +435,7 @@ ValidCrc::ValidCrc(UUID uuid, uint16_t code, uint32_t payload_size, const char f
 {
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(file_name);
-	size_t amt = (len >= NAME_LENGTH) ? (NAME_LENGTH - 1) : len;
+	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->file_name, 0, sizeof(this->file_name));
 	strncpy_s(this->file_name, file_name, amt);
@@ -493,7 +493,7 @@ bool ValidCrc::run(tcp::socket &sock) {
 	This method packs the header and payload for the valid crc request in a form of uint8_t vector.
 	All numeric fields are ordered by little endian order.
 */
-std::vector<uint8_t> ValidCrc::pack_valid_crc_request() {
+std::vector<uint8_t> ValidCrc::pack_valid_crc_request() const {
 	std::vector<uint8_t> req = pack_header();
 
 	std::copy(file_name, file_name + sizeof(file_name), req.begin() + REQUEST_HEADER_SIZE);
@@ -506,7 +506,7 @@ SendingCrcAgain::SendingCrcAgain(UUID uuid, uint16_t code, uint32_t payload_size
 {
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(file_name);
-	size_t amt = (len >= NAME_LENGTH) ? (NAME_LENGTH - 1) : len;
+	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->file_name, 0, sizeof(this->file_name));
 	strncpy_s(this->file_name, file_name, amt);
@@ -532,7 +532,7 @@ bool SendingCrcAgain::run(tcp::socket &sock) {
 	This method packs the header and payload for the sending crc again request in a form of uint8_t vector.
 	All numeric fields are ordered by little endian order.
 */
-std::vector<uint8_t> SendingCrcAgain::pack_sending_crc_again_request() {
+std::vector<uint8_t> SendingCrcAgain::pack_sending_crc_again_request() const {
 	std::vector<uint8_t> req = pack_header();
 
 	std::copy(file_name, file_name + sizeof(file_name), req.begin() + REQUEST_HEADER_SIZE);
@@ -545,7 +545,7 @@ InvalidCrcDone::InvalidCrcDone(UUID uuid, uint16_t code, uint32_t payload_size, 
 {
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(file_name);
-	size_t amt = (len >= NAME_LENGTH) ? (NAME_LENGTH - 1) : len;
+	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->file_name, 0, sizeof(this->file_name));
 	strncpy_s(this->file_name, file_name, amt);
@@ -604,7 +604,7 @@ bool InvalidCrcDone::run(tcp::socket &sock) {
 	This method packs the header and payload for the invalid crc done request in a form of uint8_t vector.
 	All numeric fields are ordered by little endian order.
 */
-std::vector<uint8_t> InvalidCrcDone::pack_invalid_crc_done_request() {
+std::vector<uint8_t> InvalidCrcDone::pack_invalid_crc_done_request() const {
 	std::vector<uint8_t> req = pack_header();
 
 	std::copy(file_name, file_name + sizeof(file_name), req.begin() + REQUEST_HEADER_SIZE);

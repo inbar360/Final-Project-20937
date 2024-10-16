@@ -35,7 +35,7 @@ static Client createClient() {
 	string transfer_path = EXE_DIR_FILE_PATH("transfer.info");
 	string line, ip_port, client_name, client_file_path;
 	ifstream transfer_file(transfer_path);
-	int lines = 1, invalid_file_data = 0;
+	int lines = 1;
 	Client client;
 
 	if (!transfer_file.is_open()) {

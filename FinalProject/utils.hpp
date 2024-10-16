@@ -31,8 +31,8 @@ const std::string EXE_DIR = "client.cpp\\..\\..\\x64\\debug";
 	((x > y) ? x : y)
 
 constexpr auto VERSION = 3;
-constexpr auto NAME_LENGTH = 255;
-constexpr auto PUBLIC_KEY_LENGTH = 160;
+constexpr auto NAME_SIZE = 255;
+constexpr auto KEY_LENGTH = 160;
 constexpr auto REQUEST_HEADER_SIZE = 23;
 constexpr auto RESPONSE_HEADER_SIZE = 7;
 constexpr auto MAX_NAME_LENGTH = 100;
@@ -40,13 +40,19 @@ constexpr auto HEX_ID_LENGTH = 32;
 constexpr auto CONTENT_SIZE_PER_PACKET = 1024;
 constexpr auto MAX_FAILS = 3;
 
+// This method checks if the given string s represents a valid integer.
 bool is_integer(const std::string& s);
+// This method receives the response header, saves the code in a uint16_t variable, converts it from little endian to native endianess, and returns it.
 uint16_t get_response_code(std::vector<uint8_t> header);
+// This method receives the response header, saves the payload size in a uint32_t variable, converts it from little endian to native endianess, and returns it.
 uint32_t get_response_payload_size(std::vector<uint8_t> header);
+// This method receives two uuids, one as a vector and one as a boost::uuids::uuid type, and checks if they're identical.
 bool id_vectors_match(std::vector<uint8_t> first, UUID second);
+// This method checks if the two given file names are identical.
 bool file_names_match(std::string response_file_name, char file_name[]);
+// This method returns a boost::uuids::uuid representation of the given string client_id.
 UUID getUuidFromString(std::string client_id);
-int getFileSize(std::string file_name);
+// This method receives a file name, opens it in binary format and returns the entire file data as a string.
 std::string fileToString(std::string file_name);
 
 enum PayloadSize: uint32_t {

@@ -62,23 +62,6 @@ UUID getUuidFromString(std::string client_id) {
 	return id;
 }
 
-int getFileSize(std::string file_name) {
-	std::string file_path = EXE_DIR_FILE_PATH(file_name);
-
-	// Opening the file in binary mode and going to its end.
-	std::ifstream file(file_path, std::ios::binary | std::ios::ate); 
-	if (file.is_open()) {
-		// Getting the position of the end of the file, meaning, its size.
-		std::streampos size = file.tellg();  
-		file.close();
-		// Returning the size of the file in bytes.
-		return static_cast<int>(size); 
-	}
-
-	// Returning -1 if the file did not open.
-	return -1; 
-}
-
 std::string fileToString(std::string file_name) {
 	std::string file_path = EXE_DIR_FILE_PATH(file_name);
 	std::ifstream file(file_path, std::ios::binary);
