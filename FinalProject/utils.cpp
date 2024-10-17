@@ -23,8 +23,8 @@ uint32_t get_response_payload_size(std::vector<uint8_t> header) {
 
 	uint32_t combined = (static_cast<uint32_t>(first) << 24) | (static_cast<uint32_t>(second) << 16) | (static_cast<uint32_t>(third) << 8) | last;
 
-	uint32_t native_code = boost::endian::little_to_native(combined);
-	return native_code;
+	uint32_t native_payload_size = boost::endian::little_to_native(combined);
+	return native_payload_size;
 }
 
 bool id_vectors_match(std::vector<uint8_t> first, UUID second) {

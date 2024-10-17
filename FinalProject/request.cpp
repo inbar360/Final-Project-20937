@@ -83,10 +83,7 @@ bool Registration::run(tcp::socket &sock) {
 				throw std::invalid_argument("server responded with an error.");
 			}
 			// The Registration succeeded, set the uuid to the id the server responded with.
-			for (int i = 0; i < response_payload.size(); i++) {
-				uuid.data[i] = (response_payload[i] >> 4);
-				uuid.data[i+1] = (response_payload[i] & 0xf);
-			}
+			std::copy(response_payload.begin(), response_payload.end(), uuid.begin());
 			// If this code is reached, there was no error and the Registration was successful, so we break from the loop.
 			break;
 		}
