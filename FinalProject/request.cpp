@@ -63,7 +63,7 @@ int Registration::run(tcp::socket &sock) {
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_registration_request();
 
-	while (times_sent != MAX_FAILS) {
+	while (times_sent != MAX_REQUEST_FAILS) {
 		try {
 			// Send the request to the server via the provided socket.
 			boost::asio::write(sock, boost::asio::buffer(request));
@@ -95,7 +95,7 @@ int Registration::run(tcp::socket &sock) {
 	}
 
 	// If the i reached 3, return FAILURE.
-	if (times_sent == MAX_FAILS) {
+	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
 	// If the client succeeded, return SUCCESS.
@@ -145,7 +145,7 @@ int SendingPublicKey::run(tcp::socket& sock) {
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_sending_public_key_request();
 
-	while (times_sent != MAX_FAILS) {
+	while (times_sent != MAX_REQUEST_FAILS) {
 		try {
 			// Send the request to the server via the provided socket.
 			boost::asio::write(sock, boost::asio::buffer(request));
@@ -184,7 +184,7 @@ int SendingPublicKey::run(tcp::socket& sock) {
 	}
 
 	// If the i reached 3, return FAILURE.
-	if (times_sent == MAX_FAILS) {
+	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
 	// If the client succeeded, return SUCCESS.
@@ -228,7 +228,7 @@ int Reconnection::run(tcp::socket &sock) {
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_reconnection_request();
 
-	while (times_sent != MAX_FAILS) {
+	while (times_sent != MAX_REQUEST_FAILS) {
 		try {
 			// Send the request to the server via the provided socket.
 			boost::asio::write(sock, boost::asio::buffer(request));
@@ -273,7 +273,7 @@ int Reconnection::run(tcp::socket &sock) {
 		times_sent++;
 	}
 	// If the i reached 3, return FAILURE.
-	if (times_sent == MAX_FAILS) {
+	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
 	// If the client succeeded, return SUCCESS.
@@ -450,7 +450,7 @@ int ValidCrc::run(tcp::socket &sock) {
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_valid_crc_request();
 
-	while (times_sent != MAX_FAILS) {
+	while (times_sent != MAX_REQUEST_FAILS) {
 		try {
 			// Send the request to the server via the provided socket.
 			boost::asio::write(sock, boost::asio::buffer(request));
@@ -486,7 +486,7 @@ int ValidCrc::run(tcp::socket &sock) {
 		times_sent++;
 	}
 	// If the i reached 3, return FAILURE.
-	if (times_sent == MAX_FAILS) {
+	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
 	// If the client succeeded, return SUCCESS.
@@ -561,7 +561,7 @@ int InvalidCrcDone::run(tcp::socket &sock) {
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_invalid_crc_done_request();
 
-	while (times_sent != MAX_FAILS) {
+	while (times_sent != MAX_REQUEST_FAILS) {
 		try {
 			// Send the request to the server via the provided socket.
 			boost::asio::write(sock, boost::asio::buffer(request));
@@ -597,7 +597,7 @@ int InvalidCrcDone::run(tcp::socket &sock) {
 		times_sent++;
 	}
 	// If the i reached 3, return FAILURE.
-	if (times_sent == MAX_FAILS) {
+	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
 	// If the client succeeded, return SUCCESS.

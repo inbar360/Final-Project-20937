@@ -239,7 +239,7 @@ static void run_client(tcp::socket &sock, Client& client) {
 	}
 	AESWrapper aesKeyWrapper(reinterpret_cast<const unsigned char *>(decrypted_aes_key.c_str()), decrypted_aes_key.size());
 	int file_error_cnt = 0, times_crc_sent = 0;
-	while (file_error_cnt != MAX_FAILS && times_crc_sent != MAX_FAILS) {
+	while (file_error_cnt != MAX_REQUEST_FAILS && times_crc_sent != MAX_INVALID_CRC) {
 		// Get the file's content, save the encrypted content and save the sizes of both.
 		std::string content = fileToString(client.getFilePath());
 		std::string encrypted_content = aesKeyWrapper.encrypt(content.c_str(), content.length());
@@ -268,10 +268,10 @@ static void run_client(tcp::socket &sock, Client& client) {
 		// If the sending crc request did not succeed, add 1 to times crc sent counter.
 		times_crc_sent++;
 	}
-	if (file_error_cnt == MAX_FAILS) {
+	if (file_error_cnt == MAX_REQUEST_FAILS) { // If the Sending File request failed three times print fatal and return.
 		FATAL_MESSAGE_RETURN("Sending File");
 	}
-	else if (times_crc_sent == MAX_FAILS) {
+	else if (times_crc_sent == MAX_INVALID_CRC) { // If the CRC was invalid three times,
 		InvalidCrcDone invalid_crc_done(client.getUuid(), Codes::INVALID_CRC_DONE_C, PayloadSize::INVALID_CRC_DONE_P, client.getFilePath().c_str());
 		invalid_crc_done.run(sock);
 	}
