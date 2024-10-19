@@ -16,7 +16,7 @@ class Request {
 		uint32_t getPayloadSize() const;
 
 		// Pure Virtual function, each request derived class will implement this function.
-		virtual bool run(tcp::socket &sock) = 0;
+		virtual int run(tcp::socket &sock) = 0;
 		// This method packs the request header fields into a uint8_t vector of size payload_size and returns it.
 		std::vector<uint8_t> pack_header() const;
 };
@@ -28,7 +28,7 @@ class Registration : public Request {
 		Registration(UUID uuid, uint16_t code, uint32_t payload_size, const char name[]);
 
 		// This method runs the Registration request and gets the server's response.
-		bool run(tcp::socket &sock);
+		int run(tcp::socket &sock);
 		// This method packs the Registration Request fields into a uint8_t vector and returns it.
 		std::vector<uint8_t> pack_registration_request() const;
 };
@@ -43,7 +43,7 @@ class SendingPublicKey : public Request {
 		std::string getEncryptedAesKey() const;
 
 		// This method runs the Sending Public Key request and gets the server's response.
-		bool run(tcp::socket& sock);
+		int run(tcp::socket& sock);
 		// This method packs the Sending Public Key Request fields into a uint8_t vector and returns it.
 		std::vector<uint8_t> pack_sending_public_key_request() const;
 };
@@ -57,7 +57,7 @@ class Reconnection : public Request {
 		std::string getEncryptedAesKey() const;
 
 		// This method runs the Reconnection request and gets the server's response.
-		bool run(tcp::socket &sock);
+		int run(tcp::socket &sock);
 		// This method packs the Reconnection Request fields into a uint8_t vector and returns it.
 		std::vector<uint8_t> pack_reconnection_request() const;
 };
@@ -79,7 +79,7 @@ class SendingFile : public Request {
 		std::string getCksum() const;
 
 		// This method runs the Sending File request and gets the server's response.
-		bool run(tcp::socket& sock);
+		int run(tcp::socket& sock);
 		// This method packs the Sending File Request fields into a uint8_t vector and returns it.
 		std::vector<uint8_t> pack_sending_file_request() const;
 		// This method saves the response's content size in a uint32_t variable, reorders it from little endian order to the OS's native endianess ordering and returns it.
@@ -93,7 +93,7 @@ class ValidCrc : public Request {
 		ValidCrc(UUID uuid, uint16_t code, uint32_t payload_size, const char file_name[]);
 
 		// This method runs the Valid CRC request and gets the server's response.
-		bool run(tcp::socket &sock);
+		int run(tcp::socket &sock);
 		// This method packs the Valid CRC Request fields into a uint8_t vector and returns it.
 		std::vector<uint8_t> pack_valid_crc_request() const;
 };
@@ -105,7 +105,7 @@ class SendingCrcAgain : public Request {
 		SendingCrcAgain(UUID uuid, uint16_t code, uint32_t payload_size, const char file_name[]);
 
 		// This method runs the Sending CRC Again request and gets the server's response.
-		bool run(tcp::socket &sock);
+		int run(tcp::socket &sock);
 		// This method packs the Sending CRC Again Request fields into a uint8_t vector and returns it.
 		std::vector<uint8_t> pack_sending_crc_again_request() const;
 };
@@ -117,7 +117,7 @@ class InvalidCrcDone : public Request {
 		InvalidCrcDone(UUID uuid, uint16_t code, uint32_t payload_size, const char file_name[]);
 
 		// This method runs the Invalid CRC Done request and gets the server's response.
-		bool run(tcp::socket &sock);
+		int run(tcp::socket &sock);
 		// This method packs the Invalid CRC Done Request fields into a uint8_t vector and returns it.
 		std::vector<uint8_t> pack_invalid_crc_done_request() const;
 };

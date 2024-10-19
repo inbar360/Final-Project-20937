@@ -39,6 +39,9 @@ constexpr auto MAX_NAME_LENGTH = 100;
 constexpr auto HEX_ID_LENGTH = 32;
 constexpr auto CONTENT_SIZE_PER_PACKET = 1024;
 constexpr auto MAX_FAILS = 3;
+constexpr auto FAILURE = 0;
+constexpr auto SUCCESS = 1;
+constexpr auto SPECIAL = 2;
 
 // This method checks if the given string s represents a valid integer.
 bool is_integer(const std::string& s);

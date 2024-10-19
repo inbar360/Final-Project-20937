@@ -58,7 +58,7 @@ Registration::Registration(UUID uuid, uint16_t code, uint32_t payload_size, cons
 	strncpy_s(this->name, name, amt);
 }
 
-bool Registration::run(tcp::socket &sock) {
+int Registration::run(tcp::socket &sock) {
 	// Pack request fields into vector and initialize parameter times_sent to 0.
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_registration_request();
@@ -94,12 +94,12 @@ bool Registration::run(tcp::socket &sock) {
 		times_sent++;
 	}
 
-	// If the i reached 3, return false.
+	// If the i reached 3, return FAILURE.
 	if (times_sent == MAX_FAILS) {
-		return false;
+		return FAILURE;
 	}
-	// If the client succeeded, return true.
-	return true;
+	// If the client succeeded, return SUCCESS.
+	return SUCCESS;
 }
 
 /*
@@ -140,7 +140,7 @@ std::string SendingPublicKey::getEncryptedAesKey() const {
 	return str_key;
 }
 
-bool SendingPublicKey::run(tcp::socket& sock) {
+int SendingPublicKey::run(tcp::socket& sock) {
 	// Pack request fields into vector and initialize parameter times_sent to 0.
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_sending_public_key_request();
@@ -183,12 +183,12 @@ bool SendingPublicKey::run(tcp::socket& sock) {
 		times_sent++;
 	}
 
-	// If the i reached 3, return false.
+	// If the i reached 3, return FAILURE.
 	if (times_sent == MAX_FAILS) {
-		return false;
+		return FAILURE;
 	}
-	// If the client succeeded, return true.
-	return true;
+	// If the client succeeded, return SUCCESS.
+	return SUCCESS;
 }
 
 /*
@@ -223,7 +223,7 @@ std::string Reconnection::getEncryptedAesKey() const {
 	return str_key;
 }
 
-bool Reconnection::run(tcp::socket &sock) {
+int Reconnection::run(tcp::socket &sock) {
 	// Pack request fields into vector and initialize parameter times_sent to 0.
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_reconnection_request();
@@ -243,8 +243,15 @@ bool Reconnection::run(tcp::socket &sock) {
 			std::vector<uint8_t> response_payload(response_payload_size);
 			size_t length = boost::asio::read(sock, boost::asio::buffer(response_payload, response_payload_size));
 
+			// If client could not reconnect but could register, set the new uuid and return SPECIAL, indicating registration instead of reconnection.
+			if (response_code == Codes::RECONNECTION_FAILED_C && response_payload_size == PayloadSize::RECONNECTION_FAILED_P && length == response_payload_size) {
+				// The Registration succeeded, set the uuid to the id the server responded with.
+				std::copy(response_payload.begin(), response_payload.end(), uuid.begin());
+				return SPECIAL;
+			}
+
 			// If the code is not success, the payload_size for the code is not the same as the size received in the header, or the length of the payload is not the wanted length, print error.
-			if (response_code != Codes::RECONNECTION_SUCCEEDED_C || response_payload_size != PayloadSize::RECONNECTION_SUCCEEDED_P || length != response_payload_size) {
+			else if (response_code != Codes::RECONNECTION_SUCCEEDED_C || response_payload_size != PayloadSize::RECONNECTION_SUCCEEDED_P || length != response_payload_size) {
 				throw std::invalid_argument("server responded with an error.");
 			}
 
@@ -265,12 +272,12 @@ bool Reconnection::run(tcp::socket &sock) {
 		// Increment the i by 1 each iteration.
 		times_sent++;
 	}
-	// If the i reached 3, return false.
+	// If the i reached 3, return FAILURE.
 	if (times_sent == MAX_FAILS) {
-		return false;
+		return FAILURE;
 	}
-	// If the client succeeded, return true.
-	return true;
+	// If the client succeeded, return SUCCESS.
+	return SUCCESS;
 }
 
 /*
@@ -326,7 +333,7 @@ std::string SendingFile::getCksum() const {
 	return str_cksum;
 }
 
-bool SendingFile::run(tcp::socket& sock) {
+int SendingFile::run(tcp::socket& sock) {
 	
 	for (packet_number = 1; packet_number <= total_packets; packet_number++) {
 		size_t amt_to_read = MIN(CONTENT_SIZE_PER_PACKET, content_size - (packet_number-1)*CONTENT_SIZE_PER_PACKET);
@@ -385,10 +392,10 @@ bool SendingFile::run(tcp::socket& sock) {
 	}
 	catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
-		return false;
+		return FAILURE;
 	}
 
-	return true;
+	return SUCCESS;
 }
 
 std::vector<uint8_t> SendingFile::pack_sending_file_request() const {
@@ -438,7 +445,7 @@ ValidCrc::ValidCrc(UUID uuid, uint16_t code, uint32_t payload_size, const char f
 	strncpy_s(this->file_name, file_name, amt);
 }
 
-bool ValidCrc::run(tcp::socket &sock) {
+int ValidCrc::run(tcp::socket &sock) {
 	// Pack request fields into vector and initialize parameter times_sent to 0.
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_valid_crc_request();
@@ -469,7 +476,7 @@ bool ValidCrc::run(tcp::socket &sock) {
 			if (!id_vectors_match(payload_id, uuid)) {
 				throw std::invalid_argument("server responded with an error.");
 			}
-			// If the id provided by the server is correct, break from the loop and return true.
+			// If the id provided by the server is correct, break from the loop and return SUCCESS.
 			break;
 		}
 		catch (std::exception& e) {
@@ -478,12 +485,12 @@ bool ValidCrc::run(tcp::socket &sock) {
 		// Increment the i by 1 each iteration.
 		times_sent++;
 	}
-	// If the i reached 3, return false.
+	// If the i reached 3, return FAILURE.
 	if (times_sent == MAX_FAILS) {
-		return false;
+		return FAILURE;
 	}
-	// If the client succeeded, return true.
-	return true;
+	// If the client succeeded, return SUCCESS.
+	return SUCCESS;
 }
 
 /*
@@ -509,7 +516,7 @@ SendingCrcAgain::SendingCrcAgain(UUID uuid, uint16_t code, uint32_t payload_size
 	strncpy_s(this->file_name, file_name, amt);
 }
 
-bool SendingCrcAgain::run(tcp::socket &sock) {
+int SendingCrcAgain::run(tcp::socket &sock) {
 	// Pack request fields into vector.
 	std::vector<uint8_t> request = pack_sending_crc_again_request();
 
@@ -519,10 +526,10 @@ bool SendingCrcAgain::run(tcp::socket &sock) {
 	}
 	catch (std::exception& e) {
 		std::cerr << "server repsonded with an error." << std::endl;
-		return false;
+		return FAILURE;
 	}
 
-	return true;
+	return SUCCESS;
 }
 
 /*
@@ -549,7 +556,7 @@ InvalidCrcDone::InvalidCrcDone(UUID uuid, uint16_t code, uint32_t payload_size, 
 }
 
 // TODO: go over this and change to fit this request.
-bool InvalidCrcDone::run(tcp::socket &sock) {
+int InvalidCrcDone::run(tcp::socket &sock) {
 	// Pack request fields into vector and initialize parameter times_sent to 0.
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_invalid_crc_done_request();
@@ -580,7 +587,7 @@ bool InvalidCrcDone::run(tcp::socket &sock) {
 			if (!id_vectors_match(payload_id, uuid)) {
 				throw std::invalid_argument("server responded with an error.");
 			}
-			// If the id provided by the server is correct, break from the loop and return true.
+			// If the id provided by the server is correct, break from the loop and return SUCCESS.
 			break;
 		}
 		catch (std::exception& e) {
@@ -589,12 +596,12 @@ bool InvalidCrcDone::run(tcp::socket &sock) {
 		// Increment the i by 1 each iteration.
 		times_sent++;
 	}
-	// If the i reached 3, return false.
+	// If the i reached 3, return FAILURE.
 	if (times_sent == MAX_FAILS) {
-		return false;
+		return FAILURE;
 	}
-	// If the client succeeded, return true.
-	return true;
+	// If the client succeeded, return SUCCESS.
+	return SUCCESS;
 }
 
 /*

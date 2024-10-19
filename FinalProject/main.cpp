@@ -161,8 +161,14 @@ static void save_to_files(string name, UUID uuid, string priv_key) {
 }
 
 // This method runs the client's program - sends it's requests and gets responses.
+
+/*
+	TODO: You realized it didn't work because you dont register the client if the reconnection returns 1606.
+		  What you thought on doing to solve this - make 'op_success' an int, define/const SUCCESS/FAILURE/SPECIAL,
+		  and check that each time. Specifically for Reconnection, check if op_success == SPECIAL, if so, do the things needed.
+*/
 static void run_client(tcp::socket &sock, Client& client) {
-	bool op_success;
+	int op_success;
 	string private_key, decrypted_aes_key;
 
 	// If me.info does not exist, send Registration request.
@@ -170,7 +176,7 @@ static void run_client(tcp::socket &sock, Client& client) {
 		Registration registration(client.getUuid(), Codes::REGISTRATION_C, PayloadSize::REGISTRATION_P, client.getName().c_str());
 		op_success = registration.run(sock);
 
-		if (!op_success) {
+		if (op_success == FAILURE) {
 			FATAL_MESSAGE_RETURN("Registration");
 		}
 		// Set client's new UUID.
@@ -183,7 +189,7 @@ static void run_client(tcp::socket &sock, Client& client) {
 		SendingPublicKey sending_pub_key(client.getUuid(), Codes::SENDING_PUBLIC_KEY_C, PayloadSize::SENDING_PUBLIC_KEY_P, client.getName().c_str(), public_key.c_str());
 		op_success = sending_pub_key.run(sock);
 
-		if (!op_success) {
+		if (op_success == FAILURE) {
 			FATAL_MESSAGE_RETURN("Sending Public Key");
 		}
 
@@ -199,17 +205,37 @@ static void run_client(tcp::socket &sock, Client& client) {
 		Reconnection reconnection(client.getUuid(), Codes::RECONNECTION_C, PayloadSize::RECONNECTION_P, client.getName().c_str());
 		op_success = reconnection.run(sock);
 
-		if (!op_success) {
+		if (op_success == FAILURE) { // Request failed.
 			FATAL_MESSAGE_RETURN("Reconnection");
 		}
+		else if (op_success == SPECIAL) { // Registration succeded instead of Reconnection.
+			// Set client's new UUID.
+			client.setUuid(reconnection.getUuid());
+			// Create RSA pair, save fields data into me.info and prev.key files, and send a SendingPublicKey request.
+			RSAPrivateWrapper prevKeyWrapper;
+			string public_key = prevKeyWrapper.getPublicKey();
+			private_key = prevKeyWrapper.getPrivateKey();
+			save_to_files(client.getName(), client.getUuid(), private_key);
+			SendingPublicKey sending_pub_key(client.getUuid(), Codes::SENDING_PUBLIC_KEY_C, PayloadSize::SENDING_PUBLIC_KEY_P, client.getName().c_str(), public_key.c_str());
+			op_success = sending_pub_key.run(sock);
 
-		// Decode the private key and create the decryptor.
-		private_key = Base64Wrapper::decode(key_base64);
-		RSAPrivateWrapper prevKeyWrapper(private_key);
+			if (op_success == FAILURE) {
+				FATAL_MESSAGE_RETURN("Sending Public Key");
+			}
 
-		// Get the encrypted AES key and decrypt it.
-		string encrypted_aes_key = reconnection.getEncryptedAesKey();
-		decrypted_aes_key = prevKeyWrapper.decrypt(encrypted_aes_key);
+			// Get the encrypted AES key and decrypt it.
+			string encrypted_aes_key = sending_pub_key.getEncryptedAesKey();
+			decrypted_aes_key = prevKeyWrapper.decrypt(encrypted_aes_key);
+		}
+		else { // Reconnection succeeded.
+			// Decode the private key and create the decryptor.
+			private_key = Base64Wrapper::decode(key_base64);
+			RSAPrivateWrapper prevKeyWrapper(private_key);
+
+			// Get the encrypted AES key and decrypt it.
+			string encrypted_aes_key = reconnection.getEncryptedAesKey();
+			decrypted_aes_key = prevKeyWrapper.decrypt(encrypted_aes_key);
+		}
 	}
 	AESWrapper aesKeyWrapper(reinterpret_cast<const unsigned char *>(decrypted_aes_key.c_str()), decrypted_aes_key.size());
 	int file_error_cnt = 0, times_crc_sent = 0;
@@ -225,7 +251,7 @@ static void run_client(tcp::socket &sock, Client& client) {
 		SendingFile sendingFile(client.getUuid(), Codes::SENDING_FILE_C, PayloadSize::SENDING_FILE_P, content_size, orig_size, total_packs, client.getFilePath().c_str(), encrypted_content);
 		op_success = sendingFile.run(sock);
 		// If the sending file request did not succeed, add 1 to sending file error counter and continue the loop.
-		if (!op_success) {
+		if (op_success == FAILURE) {
 			file_error_cnt++;
 			continue;
 		}
