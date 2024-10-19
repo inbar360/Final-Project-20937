@@ -36,7 +36,7 @@ class Registration : public Request {
 class SendingPublicKey : public Request {
 	char name[NAME_SIZE];
 	char public_key[KEY_LENGTH];
-	char encrypted_aes_key[KEY_LENGTH];
+	char encrypted_aes_key[ENC_AES_KEY_LENGTH];
 
 	public:
 		SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_size, const char name[], const char public_key[]);
@@ -50,7 +50,7 @@ class SendingPublicKey : public Request {
 
 class Reconnection : public Request {
 	char name[NAME_SIZE];
-	char encrypted_aes_key[KEY_LENGTH];
+	char encrypted_aes_key[ENC_AES_KEY_LENGTH];
 
 	public:
 		Reconnection(UUID uuid, uint16_t code, uint32_t payload_size, const char name[]);

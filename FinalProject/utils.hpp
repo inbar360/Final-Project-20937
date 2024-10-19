@@ -33,6 +33,7 @@ const std::string EXE_DIR = "client.cpp\\..\\..\\x64\\debug";
 constexpr auto VERSION = 3;
 constexpr auto NAME_SIZE = 255;
 constexpr auto KEY_LENGTH = 160;
+constexpr auto ENC_AES_KEY_LENGTH = 128;
 constexpr auto REQUEST_HEADER_SIZE = 23;
 constexpr auto RESPONSE_HEADER_SIZE = 7;
 constexpr auto MAX_NAME_LENGTH = 100;
@@ -70,10 +71,10 @@ enum PayloadSize: uint32_t {
 
 	REGISTRATION_SUCCEEDED_P = 16,
 	REGISTRATION_FAILED_P = 0,
-	PUBLIC_KEY_RECEIVED_P = 176,
+	PUBLIC_KEY_RECEIVED_P = 144,
 	FILE_RECEIVED_CRC_P = 279,
 	MESSAGE_RECEIVED_P = 16,
-	RECONNECTION_SUCCEEDED_P = 176,
+	RECONNECTION_SUCCEEDED_P = 144,
 	RECONNECTION_FAILED_P = 16,
 	GENERAL_ERROR_P = 0
 };
