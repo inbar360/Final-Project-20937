@@ -1,7 +1,7 @@
 from clients import Client
 import socket
 import struct
-from utils import ReqState, requests_formats, encrypt_aes_key
+from utils import ReqState, requests_formats, encrypt_aes_key, RequestCodes, decodes_utf8
 from requests_handling import requests_functions
 from responses import PAYLOAD_SIZES
 import responses
@@ -59,15 +59,17 @@ class Server:
     def client_id_registered(self, client_id: bytes) -> bool:
         if client_id in self._clients.keys():
             return True
+        print("the id isn't registered.")
         return False
 
     # This function checks if the server has a registered client with both provided fields.
     def client_registered(self, client_id: bytes, client_name: str) -> bool:
         if self.client_id_registered(client_id):
-            return self._clients[client_id] == client_name
+            return self._clients[client_id].get_name() == client_name
+        print("the id + name aren't registered.")
         return False
 
-    def handle_request(self, conn: socket.socket, client_id: bytes, code: int, payload_size: int) -> \
+    def handle_request(self, conn: socket.socket, client_id: bytes, code: RequestCodes, payload_size: int) -> \
             tuple[ReqState, tuple | None]:
         """
         Handle receiving, unpacking, and processing the client's request.
@@ -81,14 +83,15 @@ class Server:
         """
         # Receiving the payload from the socket.
         payload = conn.recv(payload_size)
+        code_int = code.value
 
         # If the client gave an invalid code, return false and the error.
-        if code not in requests_formats.keys():
+        if code_int not in requests_formats.keys():
             return ReqState.GENERAL_ERROR, None
 
         # Unpacking the payload using the formats, and calling the correct function to handle the request.
-        unpacked_payload = struct.unpack(requests_formats[code], payload)
-        return requests_functions[code](self, client_id, code, unpacked_payload), unpacked_payload
+        unpacked_payload = struct.unpack(requests_formats[code_int], payload)
+        return requests_functions[code_int](self, client_id, code, unpacked_payload), unpacked_payload
 
     def handle_response(self, conn: socket.socket, client_id: bytes, code: ReqState, unpacked_request_payload) -> None:
         """
@@ -100,35 +103,42 @@ class Server:
         :param unpacked_request_payload: The request's unpacked payload, used for accessing the newly created client id,
                in case the response is either registration suceeded (1600), or reconnection failed (1606).
         """
+        code_int: int = code.value
+
         match code:
             case ReqState.REGISTERED_SUCCESSFULLY:
-                response = responses.RegistrationSucceeded(code, PAYLOAD_SIZES[code],
-                                                           client_id=self.get_uuid_by_name(unpacked_request_payload))
+                name = decodes_utf8(unpacked_request_payload[0])
+                get_id = self.get_uuid_by_name(name)
+                response = responses.RegistrationSucceeded(code_int, PAYLOAD_SIZES[code_int],
+                                                           client_id=get_id)
             case ReqState.CLIENT_NAME_REGISTERED:
-                response = responses.RegistrationFailed(code, PAYLOAD_SIZES[code])
+                response = responses.RegistrationFailed(code_int, PAYLOAD_SIZES[code_int])
             case ReqState.PUBLIC_KEY_RECEIVED:
                 client = self.get_client(client_id)
                 pub_key = client.get_public_key()
                 aes_key = client.get_aes_key()
                 enc_aes_key = encrypt_aes_key(aes_key, pub_key)
-                response = responses.PublicKeyReceived(code, PAYLOAD_SIZES[code], client_id, enc_aes_key)
+                response = responses.PublicKeyReceived(code_int, PAYLOAD_SIZES[code_int], client_id, enc_aes_key)
             case ReqState.FILE_RECEIVED_CRC:
                 client = self.get_client(client_id)
-                response = responses.FileReceivedCrc(code, PAYLOAD_SIZES[code], client_id, client.get_content_size(),
-                                                     client.get_file_name(), client.get_crc())
+                response = responses.FileReceivedCrc(code_int, PAYLOAD_SIZES[code_int], client_id,
+                                                     client.get_content_size(), client.get_file_name(),
+                                                     client.get_crc())
             case ReqState.MESSAGE_RECEIVED:
-                response = responses.MessageReceived(code, PAYLOAD_SIZES[code], client_id)
+                response = responses.MessageReceived(code_int, PAYLOAD_SIZES[code_int], client_id)
             case ReqState.RECONNECTED_SUCCESSFULLY:
                 client = self.get_client(client_id)
                 pub_key = client.get_public_key()
                 aes_key = client.get_aes_key()
                 enc_aes_key = encrypt_aes_key(aes_key, pub_key)
-                response = responses.ReconnectionSucceeded(code, PAYLOAD_SIZES[code], client_id, enc_aes_key)
+                response = responses.ReconnectionSucceeded(code_int, PAYLOAD_SIZES[code_int], client_id, enc_aes_key)
             case ReqState.NOT_REGISTERED_OR_INVALID_KEY:
-                response = responses.ReconnectionFailed(code, PAYLOAD_SIZES[code],
-                                                        client_id=self.get_uuid_by_name(unpacked_request_payload))
+                name = decodes_utf8(unpacked_request_payload[0])
+                get_id = self.get_uuid_by_name(name)
+                response = responses.ReconnectionFailed(code_int, PAYLOAD_SIZES[code_int],
+                                                        client_id=get_id)
             case ReqState.GENERAL_ERROR:
-                response = responses.GeneralError(code, PAYLOAD_SIZES[code])
+                response = responses.GeneralError(code_int, PAYLOAD_SIZES[code_int])
             case _:
                 return
         response.run(conn)
@@ -141,10 +151,19 @@ class Server:
         conn, address = sock.accept()
 
         while True:
+            print("waiting for request!")
             header = conn.recv(HEADER_SIZE)
+
+            if len(header) == 0:
+                conn.close()
+                break
+
+            print("len =", len(header))
             unpacked_header = struct.unpack(HEADER_FORMAT, header)
             client_id, version, code, payload_size = unpacked_header
 
+            print("code =", code)
             # Call a function to handle the client's request.
-            response_code, unpacked_request_payload = self.handle_request(conn, client_id, code, payload_size)
+            response_code, unpacked_request_payload = self.handle_request(conn, client_id, RequestCodes(code),
+                                                                          payload_size)
             self.handle_response(conn, client_id, response_code, unpacked_request_payload)

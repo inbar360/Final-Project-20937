@@ -20,14 +20,12 @@ requests_formats = {
 }
 
 responses_formats = {
-    1600: '<B H I 16s',
-    1601: '<B H I',
-    1602: '<B H I 16s 128s',
-    1603: '<B H I 16s I 255s 4s',
-    1604: '<B H I 16s',
-    1605: '<B H I 16s 128s',
-    1606: '<B H I 16s',
-    1607: '<B H I'
+    1600: '16s',
+    1602: '16s 128s',
+    1603: '<16s I 255s 4s',
+    1604: '16s',
+    1605: '16s 128s',
+    1606: '16s'
 }
 
 
@@ -48,7 +46,7 @@ def decodes_utf8(to_decode: bytes) -> str:
 
     :returns: The decoded utf-8 string.
     """
-    return to_decode.decode('utf-8', 'ignore')
+    return to_decode.decode('utf-8', 'ignore').strip('\0')
 
 
 def create_aes_key(key_size=256) -> bytes:

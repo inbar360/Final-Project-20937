@@ -28,6 +28,7 @@ class Response(ABC):
 
         :return: A bytes object containing the header fields - version, code, and the payload size.
         """
+        print("payload_size =", self._payload_size)
         return struct.pack(RESP_HEADER_FORMAT, self._version, self._code, self._payload_size)
 
     @abstractmethod
@@ -51,6 +52,7 @@ class RegistrationSucceeded(Response):
 
     def run(self, conn: socket.socket) -> None:
         packed_msg = self.pack_registration_succeeded()
+        print("sending registration succeeded, length =", len(packed_msg))
         conn.sendall(packed_msg)
 
 
