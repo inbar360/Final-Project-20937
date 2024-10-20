@@ -50,6 +50,8 @@ std::vector<uint8_t> Request::pack_header() const {
 Registration::Registration(UUID uuid, uint16_t code, uint32_t payload_size, const char name[]):
 	Request(uuid, code, payload_size) 
 {
+	RUNNING(code);
+
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(name);
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
@@ -117,6 +119,8 @@ std::vector<uint8_t> Registration::pack_registration_request() const {
 SendingPublicKey::SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_size, const char name[], const char public_key[]):
 	Request(uuid, code, payload_size)
 {
+	RUNNING(code);
+
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(name);
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
@@ -207,6 +211,8 @@ std::vector<uint8_t> SendingPublicKey::pack_sending_public_key_request() const {
 Reconnection::Reconnection(UUID uuid, uint16_t code, uint32_t payload_size, const char name[]): 
 	Request(uuid, code, payload_size)
 {
+	RUNNING(code);
+
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(name);
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
@@ -300,6 +306,8 @@ SendingFile::SendingFile(UUID uuid, uint16_t code, uint32_t payload_size, uint32
 	total_packets(total_packets),
 	encrypted_file_content(encrypted_file_content)
 {
+	RUNNING(code);
+
 	// Fill this->file_name with null terminator, then copy a max of 254 chars from the provided file_name.
 	size_t len = strlen(file_name);
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
@@ -381,8 +389,7 @@ int SendingFile::run(tcp::socket& sock) {
 			throw std::invalid_argument("server responded with an error.");
 		}
 
-		std::string response_file_name;
-		std::copy(response_payload.begin() + sizeof(uuid) + sizeof(content_size), response_payload.begin() + sizeof(uuid) + sizeof(content_size) + sizeof(file_name), response_file_name);
+		std::string response_file_name(response_payload.begin() + sizeof(uuid) + sizeof(content_size), response_payload.begin() + sizeof(uuid) + sizeof(content_size) + sizeof(file_name));
 		if (!file_names_match(response_file_name, file_name)) {
 			throw std::invalid_argument("server responded with an error.");
 		}
@@ -437,6 +444,8 @@ uint32_t SendingFile::getPayloadContentSize(std::vector<uint8_t> payload) {
 ValidCrc::ValidCrc(UUID uuid, uint16_t code, uint32_t payload_size, const char file_name[]) :
 	Request(uuid, code, payload_size)
 {
+	RUNNING(code);
+
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(file_name);
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
@@ -508,6 +517,8 @@ std::vector<uint8_t> ValidCrc::pack_valid_crc_request() const {
 SendingCrcAgain::SendingCrcAgain(UUID uuid, uint16_t code, uint32_t payload_size, const char file_name[]):
 	Request(uuid, code, payload_size)
 {
+	RUNNING(code);
+
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(file_name);
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
@@ -525,7 +536,7 @@ int SendingCrcAgain::run(tcp::socket &sock) {
 		boost::asio::write(sock, boost::asio::buffer(request));
 	}
 	catch (std::exception& e) {
-		std::cerr << "server repsonded with an error." << std::endl;
+		std::cerr << e.what() << std::endl;
 		return FAILURE;
 	}
 
@@ -547,6 +558,8 @@ std::vector<uint8_t> SendingCrcAgain::pack_sending_crc_again_request() const {
 InvalidCrcDone::InvalidCrcDone(UUID uuid, uint16_t code, uint32_t payload_size, const char file_name[]):
 	Request(uuid, code, payload_size)
 {
+	RUNNING(code);
+
 	// Fill this->name with null terminator, then copy a max of 254 chars from the provided name.
 	size_t len = strlen(file_name);
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;

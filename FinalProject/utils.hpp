@@ -23,12 +23,13 @@ const std::string EXE_DIR = "client.cpp\\..\\..\\x64\\debug";
 #define EXE_DIR_FILE_PATH(file_name) (EXE_DIR + "\\" + file_name)
 #define NIL_UUID boost::uuids::nil_uuid()
 #define FATAL_MESSAGE_RETURN(type) \
-	cerr << "Fatal: " << type << " request failed.\n"; \
+	std::cerr << "Fatal: " << type << " request failed.\n"; \
 	return;
 #define TOTAL_PACKETS(content_size) \
 	((content_size % CONTENT_SIZE_PER_PACKET) ? (content_size/CONTENT_SIZE_PER_PACKET + 1) : content_size/CONTENT_SIZE_PER_PACKET)
 #define MIN(x, y) \
 	((x > y) ? x : y)
+#define RUNNING(code) (std::cout << "Running request code " << code << std::endl)
 
 constexpr auto VERSION = 3;
 constexpr auto NAME_SIZE = 255;
