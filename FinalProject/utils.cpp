@@ -13,18 +13,45 @@ uint16_t get_response_code(std::vector<uint8_t> header) {
 	uint8_t high = header[1], low = header[2];
 	uint16_t combined = (static_cast<uint16_t>(high) << 8) | low;
 
-	uint16_t native_code = boost::endian::little_to_native(combined);
-	return native_code;
+	std::cout << "combined code = " << combined << std::endl;
+
+	/*
+		This, in my opinion, isn't quite intuitive so I'll explain it a little:
+		By the way I define the 'combined' variable, I only insert it's value, meaning,
+		if the operating system operates by little-endian order, it'll reverse the bytes.
+		That being said, the value received is already in little-endian so we'll need to reverse them back.
+	*/
+	if (boost::endian::order::native == boost::endian::order::little) {
+		std::cout << "returning opposite of combined.\n";
+		return boost::endian::endian_reverse(combined);
+	}
+
+	return combined;
 }
 
 uint32_t get_response_payload_size(std::vector<uint8_t> header) {
 	uint8_t first = header[3], second = header[4];
 	uint8_t third = header[5], last = header[6];
 
-	uint32_t combined = (static_cast<uint32_t>(first) << 24) | (static_cast<uint32_t>(second) << 16) | (static_cast<uint32_t>(third) << 8) | last;
+	uint32_t combined = (static_cast<uint32_t>(first) << 24) |
+						(static_cast<uint32_t>(second) << 16) |
+						(static_cast<uint32_t>(third) << 8) |
+						(static_cast<uint32_t>(last));
+						
+	std::cout << "combined payload size = " << combined << std::endl;
 
-	uint32_t native_payload_size = boost::endian::little_to_native(combined);
-	return native_payload_size;
+	/*
+		This, in my opinion, isn't quite intuitive so I'll explain it a little:
+		By the way I define the 'combined' variable, I only insert it's value, meaning, 
+		if the operating system operates by little-endian order, it'll reverse the bytes.
+		That being said, the value received is already in little-endian so we'll need to reverse them back.
+	*/
+	if (boost::endian::order::native == boost::endian::order::little) {
+		std::cout << "returning opposite of combined.\n";
+		return boost::endian::endian_reverse(combined);
+	}
+
+	return combined;
 }
 
 bool id_vectors_match(std::vector<uint8_t> first, UUID second) {

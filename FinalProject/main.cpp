@@ -173,6 +173,8 @@ static void run_client(tcp::socket &sock, Client& client) {
 		if (op_success == FAILURE) {
 			FATAL_MESSAGE_RETURN("Registration");
 		}
+
+		std::cout << "finished registration request\n\n";
 		// Set client's new UUID.
 		client.setUuid(registration.getUuid());
 		// Create RSA pair, save fields data into me.info and prev.key files, and send a SendingPublicKey request.
@@ -187,6 +189,7 @@ static void run_client(tcp::socket &sock, Client& client) {
 			FATAL_MESSAGE_RETURN("Sending Public Key");
 		}
 
+		std::cout << "finished sending public key request\n\n";
 		// Get the encrypted AES key and decrypt it.
 		std::string encrypted_aes_key = sending_pub_key.getEncryptedAesKey();
 		decrypted_aes_key = prevKeyWrapper.decrypt(encrypted_aes_key);
