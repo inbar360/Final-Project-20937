@@ -126,6 +126,10 @@ def get_client_file_path(client_id: str, file_name: str) -> str:
     return os.path.join(users_directory, client_id, file_name)
 
 
+def remove_client_file(file_path: str):
+    os.remove(file_path)
+
+
 # An enum class for client requests and their codes.
 class RequestCodes(Enum):
     """

@@ -1,7 +1,6 @@
 import socket
 import struct
 import utils
-from utils import responses_formats
 from abc import ABC, abstractmethod
 
 RESP_HEADER_FORMAT = '<B H I'
@@ -48,7 +47,7 @@ class RegistrationSucceeded(Response):
         :return: A bytes object containing the registration succeeded response fields -
                  version, code, payload size, and the client id.
         """
-        return super().pack_request_header() + struct.pack(responses_formats[self._code], self._client_id)
+        return super().pack_request_header() + struct.pack(utils.responses_formats[self._code], self._client_id)
 
     def run(self, conn: socket.socket) -> None:
         packed_msg = self.pack_registration_succeeded()
@@ -87,7 +86,7 @@ class PublicKeyReceived(Response):
                  version, code, payload size, client id, and the encrypted AES key.
         """
         return super().pack_request_header() + \
-            struct.pack(responses_formats[self._code], self._client_id, self._enc_aes_key)
+            struct.pack(utils.responses_formats[self._code], self._client_id, self._enc_aes_key)
 
     def run(self, conn: socket.socket) -> None:
         packed_msg = self.pack_public_key_received()
@@ -109,7 +108,7 @@ class FileReceivedCrc(Response):
         :return: A bytes object containing the file received crc response fields -
                  version, code, payload size, client id, content size, file name, and the cksum.
         """
-        return super().pack_request_header() + struct.pack(responses_formats[self._code],
+        return super().pack_request_header() + struct.pack(utils.responses_formats[self._code],
                                                            self._client_id, self._content_size,
                                                            self._file_name, self._cksum)
 
@@ -130,7 +129,7 @@ class MessageReceived(Response):
         :return: A bytes object containing the message received response fields -
                  version, code, payload size, and the client id.
         """
-        return super().pack_request_header() + struct.pack(responses_formats[self._code], self._client_id)
+        return super().pack_request_header() + struct.pack(utils.responses_formats[self._code], self._client_id)
 
     def run(self, conn: socket.socket) -> None:
         packed_msg = self.pack_message_received()
@@ -151,7 +150,7 @@ class ReconnectionSucceeded(Response):
                  version, code, payload size, client id, and the encrypted AES key.
         """
         return super().pack_request_header() + \
-            struct.pack(responses_formats[self._code], self._client_id, self._enc_aes_key)
+            struct.pack(utils.responses_formats[self._code], self._client_id, self._enc_aes_key)
 
     def run(self, conn: socket.socket) -> None:
         packed_msg = self.pack_reconnection_succeeded()
@@ -170,7 +169,7 @@ class ReconnectionFailed(Response):
         :return: A bytes object containing the reconnection failed response fields -
                  version, code, payload size, and the client id.
         """
-        return super().pack_request_header() + struct.pack(responses_formats[self._code], self._client_id)
+        return super().pack_request_header() + struct.pack(utils.responses_formats[self._code], self._client_id)
 
     def run(self, conn: socket.socket) -> None:
         packed_msg = self.pack_reconnection_failed()

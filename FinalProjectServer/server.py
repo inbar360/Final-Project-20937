@@ -2,7 +2,7 @@ from clients import Client
 import socket
 import struct
 from utils import ReqState, requests_formats, encrypt_aes_key
-from requestsHandling import requests_functions
+from requests_handling import requests_functions
 from responses import PAYLOAD_SIZES
 import responses
 
@@ -11,7 +11,7 @@ HEADER_FORMAT = "<16s B H I"
 
 
 class Server:
-    def __init__(self, host, default_port=1256):
+    def __init__(self, host: str, default_port=1256):
         port = default_port
         try:
             file = open('port.info', 'r')
@@ -21,10 +21,10 @@ class Server:
         except ValueError:
             print('Error: file \'port.info\' does not contain wanted data. Port remained default.')
         finally:
-            self._host = host
-            self._port = port
+            self._host: str = host
+            self._port: int = port
             self._addr = (self._host, self._port)
-            self._clients = {}  # dict of the structure 'UUID : CLIENT'
+            self._clients: dict[bytes, Client] = {}  # dict of the structure 'UUID : CLIENT'
 
     def get_addr(self):
         return self._addr
@@ -32,6 +32,12 @@ class Server:
     # This function returns the registered client with the provided UUID.
     def get_client(self, client_id: bytes) -> Client:
         return self._clients[client_id]
+
+    def get_uuid_by_name(self, name: str) -> bytes | None:
+        for uid in self._clients.keys():
+            if self._clients[uid].get_name() == name:
+                return uid
+        return None
 
     # Adds a Client object with the given name to the clients dictionary, using the provided UUID as the key.
     def add_client(self, client_name: str, uuid: bytes) -> None:
@@ -61,7 +67,8 @@ class Server:
             return self._clients[client_id] == client_name
         return False
 
-    def handle_request(self, conn: socket.socket, client_id: bytes, code: int, payload_size: int) -> ReqState:
+    def handle_request(self, conn: socket.socket, client_id: bytes, code: int, payload_size: int) -> \
+            tuple[ReqState, tuple | None]:
         """
         Handle receiving, unpacking, and processing the client's request.
 
@@ -77,23 +84,26 @@ class Server:
 
         # If the client gave an invalid code, return false and the error.
         if code not in requests_formats.keys():
-            return ReqState.GENERAL_ERROR
+            return ReqState.GENERAL_ERROR, None
 
         # Unpacking the payload using the formats, and calling the correct function to handle the request.
         unpacked_payload = struct.unpack(requests_formats[code], payload)
-        return requests_functions[code](self, client_id, code, unpacked_payload)
+        return requests_functions[code](self, client_id, code, unpacked_payload), unpacked_payload
 
-    def handle_response(self, conn: socket.socket, client_id: bytes, code: ReqState) -> None:
+    def handle_response(self, conn: socket.socket, client_id: bytes, code: ReqState, unpacked_request_payload) -> None:
         """
         Handle sending the server response back to the client.
 
         :param conn: The connection object responsible for transferring messages between the server and the client.
         :param client_id: The client's id.
         :param code: The response code.
+        :param unpacked_request_payload: The request's unpacked payload, used for accessing the newly created client id,
+               in case the response is either registration suceeded (1600), or reconnection failed (1606).
         """
         match code:
             case ReqState.REGISTERED_SUCCESSFULLY:
-                response = responses.RegistrationSucceeded(code, PAYLOAD_SIZES[code], client_id)
+                response = responses.RegistrationSucceeded(code, PAYLOAD_SIZES[code],
+                                                           client_id=self.get_uuid_by_name(unpacked_request_payload))
             case ReqState.CLIENT_NAME_REGISTERED:
                 response = responses.RegistrationFailed(code, PAYLOAD_SIZES[code])
             case ReqState.PUBLIC_KEY_RECEIVED:
@@ -115,7 +125,8 @@ class Server:
                 enc_aes_key = encrypt_aes_key(aes_key, pub_key)
                 response = responses.ReconnectionSucceeded(code, PAYLOAD_SIZES[code], client_id, enc_aes_key)
             case ReqState.NOT_REGISTERED_OR_INVALID_KEY:
-                response = responses.ReconnectionFailed(code, PAYLOAD_SIZES[code], client_id)
+                response = responses.ReconnectionFailed(code, PAYLOAD_SIZES[code],
+                                                        client_id=self.get_uuid_by_name(unpacked_request_payload))
             case ReqState.GENERAL_ERROR:
                 response = responses.GeneralError(code, PAYLOAD_SIZES[code])
             case _:
@@ -135,5 +146,5 @@ class Server:
             client_id, version, code, payload_size = unpacked_header
 
             # Call a function to handle the client's request.
-            response_code = self.handle_request(conn, client_id, code, payload_size)
-            self.handle_response(conn, client_id, response_code)
+            response_code, unpacked_request_payload = self.handle_request(conn, client_id, code, payload_size)
+            self.handle_response(conn, client_id, response_code, unpacked_request_payload)
