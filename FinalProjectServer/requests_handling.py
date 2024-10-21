@@ -1,7 +1,7 @@
 from clients import Client
 from utils import decodes_utf8, ReqState, RequestCodes, decrypt_file_using_aes_key
 from utils import create_aes_key, create_uuid, create_directory, get_client_file_path, remove_client_file
-from cksum import readfile, memcrc
+from cksum import memcrc
 from Crypto.PublicKey import RSA
 
 
