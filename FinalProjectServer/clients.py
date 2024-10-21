@@ -23,7 +23,7 @@ class Client:
         self._file_name: str | None = None
         self._tot_packets: int | None = None
         self._packets: dict[int, bytes] = {}
-        self._crc: str | None = None
+        self._crc: int | None = None
         self._content_size: int | None = None
 
     def set_public_key(self, key: RsaKey) -> None:
@@ -38,7 +38,7 @@ class Client:
     def set_tot_packets(self, tot_packets: int) -> None:
         self._tot_packets = tot_packets
 
-    def set_crc(self, crc: str) -> None:
+    def set_crc(self, crc: int) -> None:
         self._crc = crc
 
     def set_content_size(self, content_size: int) -> None:
@@ -62,7 +62,7 @@ class Client:
     def get_packets(self) -> dict[int, bytes]:
         return self._packets
 
-    def get_crc(self) -> str:
+    def get_crc(self) -> int:
         return self._crc
 
     def get_content_size(self) -> int:

@@ -22,7 +22,7 @@ requests_formats = {
 responses_formats = {
     1600: '16s',
     1602: '16s 128s',
-    1603: '<16s I 255s 4s',
+    1603: '<16s I 255s I',
     1604: '16s',
     1605: '16s 128s',
     1606: '16s'
@@ -90,7 +90,8 @@ def decrypt_file_using_aes_key(file_path: str, aes_key: bytes) -> bytes:
         encrypted_data = file.read()
 
     cipher = AES.new(aes_key, AES.MODE_CBC, iv)
-    decrypted_data = unpad(cipher.decrypt(encrypted_data), AES.block_size)
+    padded_data = cipher.decrypt(encrypted_data)
+    decrypted_data = unpad(padded_data, AES.block_size)
 
     return decrypted_data
 

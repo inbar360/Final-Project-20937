@@ -59,14 +59,12 @@ class Server:
     def client_id_registered(self, client_id: bytes) -> bool:
         if client_id in self._clients.keys():
             return True
-        print("the id isn't registered.")
         return False
 
     # This function checks if the server has a registered client with both provided fields.
     def client_registered(self, client_id: bytes, client_name: str) -> bool:
         if self.client_id_registered(client_id):
             return self._clients[client_id].get_name() == client_name
-        print("the id + name aren't registered.")
         return False
 
     def handle_request(self, conn: socket.socket, client_id: bytes, code: RequestCodes, payload_size: int) -> \
@@ -104,6 +102,7 @@ class Server:
                in case the response is either registration suceeded (1600), or reconnection failed (1606).
         """
         code_int: int = code.value
+        print("the response code is -", code_int)
 
         match code:
             case ReqState.REGISTERED_SUCCESSFULLY:
@@ -121,8 +120,9 @@ class Server:
                 response = responses.PublicKeyReceived(code_int, PAYLOAD_SIZES[code_int], client_id, enc_aes_key)
             case ReqState.FILE_RECEIVED_CRC:
                 client = self.get_client(client_id)
+                bytes_file_name = client.get_file_name().encode('utf-8')
                 response = responses.FileReceivedCrc(code_int, PAYLOAD_SIZES[code_int], client_id,
-                                                     client.get_content_size(), client.get_file_name(),
+                                                     client.get_content_size(), bytes_file_name,
                                                      client.get_crc())
             case ReqState.MESSAGE_RECEIVED:
                 response = responses.MessageReceived(code_int, PAYLOAD_SIZES[code_int], client_id)
@@ -151,14 +151,13 @@ class Server:
         conn, address = sock.accept()
 
         while True:
-            print("waiting for request!")
+            print("\nwaiting for request!")
             header = conn.recv(HEADER_SIZE)
 
             if len(header) == 0:
                 conn.close()
                 break
 
-            print("len =", len(header))
             unpacked_header = struct.unpack(HEADER_FORMAT, header)
             client_id, version, code, payload_size = unpacked_header
 
