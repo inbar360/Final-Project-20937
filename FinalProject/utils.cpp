@@ -95,6 +95,7 @@ std::string fileToCharArray(std::string file_name) {
 
 		std::string con(b, b + size);
 
+		f1.close();
 		return con;
 	}
 	else {
