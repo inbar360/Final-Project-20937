@@ -13,8 +13,6 @@ uint16_t get_response_code(std::vector<uint8_t> header) {
 	uint8_t high = header[1], low = header[2];
 	uint16_t combined = (static_cast<uint16_t>(high) << 8) | low;
 
-	std::cout << "combined code = " << combined << std::endl;
-
 	/*
 		This, in my opinion, isn't quite intuitive so I'll explain it a little:
 		By the way I define the 'combined' variable, I only insert it's value, meaning,
@@ -22,7 +20,6 @@ uint16_t get_response_code(std::vector<uint8_t> header) {
 		That being said, the value received is already in little-endian so we'll need to reverse them back.
 	*/
 	if (boost::endian::order::native == boost::endian::order::little) {
-		std::cout << "returning opposite of combined.\n";
 		return boost::endian::endian_reverse(combined);
 	}
 
@@ -37,8 +34,6 @@ uint32_t get_response_payload_size(std::vector<uint8_t> header) {
 						(static_cast<uint32_t>(second) << 16) |
 						(static_cast<uint32_t>(third) << 8) |
 						(static_cast<uint32_t>(last));
-						
-	std::cout << "combined payload size = " << combined << std::endl;
 
 	/*
 		This, in my opinion, isn't quite intuitive so I'll explain it a little:
@@ -47,7 +42,6 @@ uint32_t get_response_payload_size(std::vector<uint8_t> header) {
 		That being said, the value received is already in little-endian so we'll need to reverse them back.
 	*/
 	if (boost::endian::order::native == boost::endian::order::little) {
-		std::cout << "returning opposite of combined.\n";
 		return boost::endian::endian_reverse(combined);
 	}
 
@@ -63,10 +57,10 @@ bool id_vectors_match(std::vector<uint8_t> first, UUID second) {
 	return true;
 }
 
-bool file_names_match(std::string response_file_name, char file_name[]) {
-	std::string file_name_str(file_name);
+bool file_names_match(std::string response_file_name, char file_name[], size_t file_length) {
+	std::string file_name_str(file_name, file_name + file_length);
 
-	return response_file_name == file_name_str;
+	return (response_file_name == file_name_str);
 }
 
 UUID getUuidFromString(std::string client_id) {
@@ -89,16 +83,21 @@ UUID getUuidFromString(std::string client_id) {
 	return id;
 }
 
-std::string fileToString(std::string file_name) {
+std::string fileToCharArray(std::string file_name) {
 	std::string file_path = EXE_DIR_FILE_PATH(file_name);
-	std::ifstream file(file_path, std::ios::binary);
+	if (std::filesystem::exists(file_path)) {
+		std::ifstream f1(file_path.c_str(), std::ios::binary);
 
-	if (file.is_open()) {
-		std::ostringstream oss;
-		oss << file.rdbuf();
-		file.close();
-		return oss.str();
+		size_t size = std::filesystem::file_size(file_path);
+		char* b = new char[size];
+		f1.seekg(0, std::ios::beg);
+		f1.read(b, size);
+
+		std::string con(b, b + size);
+
+		return con;
 	}
-
-	throw std::runtime_error("The client's file did not open, aborting program.");
+	else {
+		throw std::runtime_error("Cannot open input file " + file_path + ".");
+	}
 }

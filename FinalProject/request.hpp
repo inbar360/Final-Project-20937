@@ -39,7 +39,7 @@ class SendingPublicKey : public Request {
 	char encrypted_aes_key[ENC_AES_KEY_LENGTH];
 
 	public:
-		SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_size, const char name[], const char public_key[]);
+		SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_size, const char name[], std::string public_key);
 		std::string getEncryptedAesKey() const;
 
 		// This method runs the Sending Public Key request and gets the server's response.
@@ -70,13 +70,14 @@ class SendingFile : public Request {
 	char file_name[NAME_SIZE];
 	std::string encrypted_file_content;
 	char encrypted_content[CONTENT_SIZE_PER_PACKET];
-	char cksum[4];
+	unsigned long cksum;
 
 	public:
 		SendingFile(UUID uuid, uint16_t code, uint32_t payload_size, uint32_t content_size, uint32_t orig_file_size, uint16_t total_packets, const char file_name[], std::string encrypted_file_content);
-		void setEncryptedContent(const char encrypted_content[]);
+		void setEncryptedContent(std::string encrypted_content);
+		void setCksum(unsigned long cksum);
 		std::string getEncryptedContent() const;
-		std::string getCksum() const;
+		unsigned long getCksum() const;
 
 		// This method runs the Sending File request and gets the server's response.
 		int run(tcp::socket& sock);
@@ -84,6 +85,8 @@ class SendingFile : public Request {
 		std::vector<uint8_t> pack_sending_file_request() const;
 		// This method saves the response's content size in a uint32_t variable, reorders it from little endian order to the OS's native endianess ordering and returns it.
 		uint32_t getPayloadContentSize(std::vector<uint8_t> payload);
+		// This method saves the response's cksum in a uint32_t variable, reorders it from little endian order to the OS's native endianess ordering and returns it.
+		uint32_t getPayloadCksum(std::vector<uint8_t> payload);
 };
 
 class ValidCrc : public Request {

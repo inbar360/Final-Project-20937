@@ -7,4 +7,5 @@
 #include <filesystem>
 #include <string>
 
+unsigned long memcrc(const char* b, size_t n);
 std::string readfile(std::string fname);

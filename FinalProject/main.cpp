@@ -100,12 +100,13 @@ static std::string read_from_files(Client& client) {
 				private_key_me = line;
 				break;
 			default:
+				private_key_me += line;
 				break;
 		}
 		lines++;
 	}
 
-	if (lines != 4 || client_name.length() > MAX_NAME_LENGTH || client_name.length() == 0 || client_id.length() != HEX_ID_LENGTH || private_key_me.length() == 0) {
+	if (client_name.length() > MAX_NAME_LENGTH || client_name.length() == 0 || client_id.length() != HEX_ID_LENGTH || private_key_me.length() == 0) {
 		throw std::invalid_argument("Error: me.info file contains invalid data.");
 	}
 
@@ -114,10 +115,13 @@ static std::string read_from_files(Client& client) {
 		if (lines == 1) {
 			private_key_priv = line;
 		}
+		else {
+			private_key_priv += line;
+		}
 		lines++;
 	}
 
-	if (lines != 1 || private_key_priv.length() == 0 || private_key_priv != private_key_me) {
+	if (private_key_priv.length() == 0 || private_key_priv != private_key_me) {
 		throw std::invalid_argument("Error: priv.key file contains invalid data.");
 	}
 
@@ -136,8 +140,6 @@ static void save_to_files(std::string name, UUID uuid, std::string priv_key) {
 	// Saving id and key into wanted formats, saving paths for both files and opening the streams.
 	std::string id = boost::uuids::to_string(uuid);
 	id.erase(std::remove(id.begin(), id.end(), '-'), id.end()); // Remove '-' from the string.
-
-	std::cout << "saving uuid - " << id << std::endl;
 
 	// Encode the private key to base64 and open files.
 	std::string base64PrivKey = Base64Wrapper::encode(priv_key);
@@ -174,22 +176,21 @@ static void run_client(tcp::socket &sock, Client& client) {
 			FATAL_MESSAGE_RETURN("Registration");
 		}
 
-		std::cout << "finished registration request\n\n";
 		// Set client's new UUID.
 		client.setUuid(registration.getUuid());
 		// Create RSA pair, save fields data into me.info and prev.key files, and send a SendingPublicKey request.
 		RSAPrivateWrapper prevKeyWrapper;
 		std::string public_key = prevKeyWrapper.getPublicKey();
+
 		private_key = prevKeyWrapper.getPrivateKey();
 		save_to_files(client.getName(), client.getUuid(), private_key);
-		SendingPublicKey sending_pub_key(client.getUuid(), Codes::SENDING_PUBLIC_KEY_C, PayloadSize::SENDING_PUBLIC_KEY_P, client.getName().c_str(), public_key.c_str());
+		SendingPublicKey sending_pub_key(client.getUuid(), Codes::SENDING_PUBLIC_KEY_C, PayloadSize::SENDING_PUBLIC_KEY_P, client.getName().c_str(), public_key);
 		op_success = sending_pub_key.run(sock);
 
 		if (op_success == FAILURE) {
 			FATAL_MESSAGE_RETURN("Sending Public Key");
 		}
 
-		std::cout << "finished sending public key request\n\n";
 		// Get the encrypted AES key and decrypt it.
 		std::string encrypted_aes_key = sending_pub_key.getEncryptedAesKey();
 		decrypted_aes_key = prevKeyWrapper.decrypt(encrypted_aes_key);
@@ -213,7 +214,7 @@ static void run_client(tcp::socket &sock, Client& client) {
 			std::string public_key = prevKeyWrapper.getPublicKey();
 			private_key = prevKeyWrapper.getPrivateKey();
 			save_to_files(client.getName(), client.getUuid(), private_key);
-			SendingPublicKey sending_pub_key(client.getUuid(), Codes::SENDING_PUBLIC_KEY_C, PayloadSize::SENDING_PUBLIC_KEY_P, client.getName().c_str(), public_key.c_str());
+			SendingPublicKey sending_pub_key(client.getUuid(), Codes::SENDING_PUBLIC_KEY_C, PayloadSize::SENDING_PUBLIC_KEY_P, client.getName().c_str(), public_key);
 			op_success = sending_pub_key.run(sock);
 
 			if (op_success == FAILURE) {
@@ -235,19 +236,18 @@ static void run_client(tcp::socket &sock, Client& client) {
 		}
 	}
 
-	std::cout << "the decrypted aes key is - " << decrypted_aes_key << std::endl;
-
 	AESWrapper aesKeyWrapper(reinterpret_cast<const unsigned char *>(decrypted_aes_key.c_str()), static_cast<unsigned int>(decrypted_aes_key.size()));
 	int file_error_cnt = 0, times_crc_sent = 0;
 	while (file_error_cnt != MAX_REQUEST_FAILS && times_crc_sent != MAX_INVALID_CRC) {
 		// Get the file's content, save the encrypted content and save the sizes of both.
-		std::string content = fileToString(client.getFilePath());
-		std::string encrypted_content = aesKeyWrapper.encrypt(content.c_str(), static_cast<unsigned int>(content.length()));
+		std::string content = fileToCharArray(client.getFilePath());
+		std::string encrypted_content = aesKeyWrapper.encrypt(content.c_str(), static_cast<unsigned int>(content.size()));
 		uint32_t content_size = static_cast<uint32_t>(encrypted_content.length());
-		uint32_t orig_size = static_cast<uint32_t>(content.length());
+		uint32_t orig_size = static_cast<uint32_t>(content.size());
 
 		// Save the total packets and send the Sending File request to the server.
 		uint16_t total_packs = TOTAL_PACKETS(content_size);
+
 		SendingFile sendingFile(client.getUuid(), Codes::SENDING_FILE_C, PayloadSize::SENDING_FILE_P, content_size, orig_size, total_packs, client.getFilePath().c_str(), encrypted_content);
 		op_success = sendingFile.run(sock);
 		// If the sending file request did not succeed, add 1 to sending file error counter and continue the loop.
@@ -257,13 +257,12 @@ static void run_client(tcp::socket &sock, Client& client) {
 		}
 
 		// Get the cksum the server responded with.
-		std::string response_cksum = sendingFile.getCksum();
-		std::string request_cksum = readfile(EXE_DIR_FILE_PATH(client.getFilePath()));
-
-		std::cout << "response's checksum is - " << response_cksum << std::endl;
-		std::cout << "request's checksum is - " << request_cksum << std::endl;
+		unsigned long response_cksum = sendingFile.getCksum();
+		std::cout << "readfile func returns - " << readfile(EXE_DIR_FILE_PATH(client.getFilePath())) << std::endl;
+		unsigned long request_cksum = memcrc(content.c_str(), orig_size);
 
 		if (response_cksum == request_cksum) {
+			std::cout << "wohoo they're the same!\n";
 			break;
 		}
 		
@@ -279,11 +278,21 @@ static void run_client(tcp::socket &sock, Client& client) {
 	}
 	else if (times_crc_sent == MAX_INVALID_CRC) { // If the CRC was invalid three times,
 		InvalidCrcDone invalid_crc_done(client.getUuid(), Codes::INVALID_CRC_DONE_C, PayloadSize::INVALID_CRC_DONE_P, client.getFilePath().c_str());
-		invalid_crc_done.run(sock);
+		op_success = invalid_crc_done.run(sock);
+
+		if (op_success == FAILURE) {
+			FATAL_MESSAGE_RETURN("Invalid CRC for the fourth time");
+		}
 	}
 	else {
 		ValidCrc valid_crc(client.getUuid(), Codes::VALID_CRC_C, PayloadSize::VALID_CRC_P, client.getFilePath().c_str());
+		op_success = valid_crc.run(sock);
+
+		if (op_success == FAILURE) {
+			FATAL_MESSAGE_RETURN("Valid CRC");
+		}
 	}
+	std::cout << "done!\n";
 }
 
 int main() {

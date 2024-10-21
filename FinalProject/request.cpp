@@ -57,42 +57,34 @@ Registration::Registration(UUID uuid, uint16_t code, uint32_t payload_size, cons
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->name, 0, sizeof(this->name));
-	strncpy_s(this->name, name, amt);
+	memcpy(this->name, name, amt);
 }
 
 int Registration::run(tcp::socket &sock) {
 	// Pack request fields into vector and initialize parameter times_sent to 0.
-
-	std::cout << "Running Registration" << std::endl;
 	int times_sent = 0;
 	std::vector<uint8_t> request = pack_registration_request();
 
 	while (times_sent != MAX_REQUEST_FAILS) {
 		try {
-			std::cout << "trying to write to the server a vector of size - " << request.size() << std::endl;
-
 			// Send the request to the server via the provided socket.
 			size_t l = boost::asio::write(sock, boost::asio::buffer(request));
-			std::cout << "wrote " << l << " bytes to the server.\n";
-
+			
 			// Receive header from the server, get response code and payload_size
 			std::vector<uint8_t> response_header(RESPONSE_HEADER_SIZE);
 			boost::asio::read(sock, boost::asio::buffer(response_header, RESPONSE_HEADER_SIZE));
 			uint16_t response_code = get_response_code(response_header);
 			uint32_t response_payload_size = get_response_payload_size(response_header);
 
-			std::cout << "read response's header, payload_size = " << response_payload_size << std::endl;
 			// Receive payload from the server, save it's length in a parameter length.
 			std::vector<uint8_t> response_payload(response_payload_size);
 			size_t length = boost::asio::read(sock, boost::asio::buffer(response_payload, response_payload_size));
 
-			std::cout << "read response's payload\n";
 			// If the code is not success, the payload_size for the code is not the same as the size received in the header, or the length of the payload is not the wanted length, print error.
 			if (response_code != Codes::REGISTRATION_SUCCEEDED_C || response_payload_size != PayloadSize::REGISTRATION_SUCCEEDED_P || length != response_payload_size) {
 				throw std::invalid_argument("server responded with an error.");
 			}
 
-			std::cout << "response fields are valid, copying uuid and breaking.\n";
 			// The Registration succeeded, set the uuid to the id the server responded with.
 			std::copy(response_payload.begin(), response_payload.end(), uuid.begin());
 			// If this code is reached, there was no error and the Registration was successful, so we break from the loop.
@@ -101,11 +93,11 @@ int Registration::run(tcp::socket &sock) {
 		catch (std::exception& e) {
 			std::cerr << e.what() << std::endl;
 		}
-		// Increment the i by 1 each iteration.
+		// Increment by 1 each iteration.
 		times_sent++;
 	}
 
-	// If the i reached 3, return FAILURE.
+	// If reached 3, return FAILURE.
 	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
@@ -125,7 +117,7 @@ std::vector<uint8_t> Registration::pack_registration_request() const {
 	return req;
 }
 
-SendingPublicKey::SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_size, const char name[], const char public_key[]):
+SendingPublicKey::SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_size, const char name[], std::string public_key):
 	Request(uuid, code, payload_size)
 {
 	RUNNING(code);
@@ -135,21 +127,21 @@ SendingPublicKey::SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_si
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->name, 0, sizeof(this->name));
-	strncpy_s(this->name, name, amt);
+	memcpy(this->name, name, amt);
 
 	// Fill this->public_key with null terminator, then copy a max of 160 chars from the provided public key.
-	len = strlen(public_key);
-	amt = (len > KEY_LENGTH) ? KEY_LENGTH : len;
+	size_t size = public_key.size();
+	amt = (size > KEY_LENGTH) ? KEY_LENGTH : size;
 
 	memset(this->public_key, 0, sizeof(this->public_key));
-	strncpy_s(this->public_key, public_key, amt);
+	memcpy(this->public_key, public_key.c_str(), amt);
 
 	memset(this->encrypted_aes_key, 0, sizeof(this->encrypted_aes_key));
 }
 
 // Getting the encrypted AES key received by the server in string form.
 std::string SendingPublicKey::getEncryptedAesKey() const {
-	std::string str_key(this->encrypted_aes_key);
+	std::string str_key(this->encrypted_aes_key, this->encrypted_aes_key + sizeof(this->encrypted_aes_key));
 	return str_key;
 }
 
@@ -192,11 +184,11 @@ int SendingPublicKey::run(tcp::socket& sock) {
 		catch (std::exception& e) {
 			std::cerr << e.what() << std::endl;
 		}
-		// Increment the i by 1 each iteration.
+		// Increment by 1 each iteration.
 		times_sent++;
 	}
 
-	// If the i reached 3, return FAILURE.
+	// If reached 3, return FAILURE.
 	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
@@ -227,14 +219,14 @@ Reconnection::Reconnection(UUID uuid, uint16_t code, uint32_t payload_size, cons
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->name, 0, sizeof(this->name));
-	strncpy_s(this->name, name, amt);
+	memcpy(this->name, name, amt);
 
 	memset(this->encrypted_aes_key, 0, sizeof(this->encrypted_aes_key));
 }
 
 // Getting the encrypted AES key received by the server in string form.
 std::string Reconnection::getEncryptedAesKey() const {
-	std::string str_key(this->encrypted_aes_key);
+	std::string str_key(this->encrypted_aes_key, this->encrypted_aes_key + sizeof(this->encrypted_aes_key));
 	return str_key;
 }
 
@@ -284,10 +276,10 @@ int Reconnection::run(tcp::socket &sock) {
 		catch (std::exception& e) {
 			std::cerr << e.what() << std::endl;
 		}
-		// Increment the i by 1 each iteration.
+		// Increment by 1 each iteration.
 		times_sent++;
 	}
-	// If the i reached 3, return FAILURE.
+	// If reached 3, return FAILURE.
 	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
@@ -313,7 +305,8 @@ SendingFile::SendingFile(UUID uuid, uint16_t code, uint32_t payload_size, uint32
 	orig_file_size(orig_file_size),
 	packet_number(0),
 	total_packets(total_packets),
-	encrypted_file_content(encrypted_file_content)
+	encrypted_file_content(encrypted_file_content),
+	cksum(0)
 {
 	RUNNING(code);
 
@@ -322,40 +315,43 @@ SendingFile::SendingFile(UUID uuid, uint16_t code, uint32_t payload_size, uint32
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->file_name, 0, sizeof(this->file_name));
-	strncpy_s(this->file_name, file_name, amt);
+	memcpy(this->file_name, file_name, amt);
 
 	memset(this->encrypted_content, 0, sizeof(this->encrypted_content));
-	memset(this->cksum, 0, sizeof(this->cksum));
 }
 
 // Setting the current packet's encrypted content.
-void SendingFile::setEncryptedContent(const char encrypted_content[]) {
+void SendingFile::setEncryptedContent(std::string encrypted_content) {
 	// Fill this->encrypted_content with null terminator, then copy a max of 1024 chars from the provided file_name.
-	size_t len = strlen(encrypted_content);
+	size_t len = encrypted_content.size();
 	size_t amt = (len > CONTENT_SIZE_PER_PACKET) ? CONTENT_SIZE_PER_PACKET : len;
 
 	memset(this->encrypted_content, 0, sizeof(this->encrypted_content));
-	strncpy_s(this->encrypted_content, encrypted_content, amt);
+	memcpy(this->encrypted_content, encrypted_content.c_str(), amt);
+}
+
+// Setting the cksum to the given unsigned long variable.
+void SendingFile::setCksum(unsigned long cksum) {
+	this->cksum = cksum;
 }
 
 // Getting the current packets encrypted content in string form.
 std::string SendingFile::getEncryptedContent() const {
-	std::string str_encrypted_content(this->encrypted_content);
+	std::string str_encrypted_content(this->encrypted_content, this->encrypted_content + sizeof(this->encrypted_content));
 	return str_encrypted_content;
 }
 
-// Getting the cksum received by the server in string form.
-std::string SendingFile::getCksum() const {
-	std::string str_cksum(this->cksum);
-	return str_cksum;
+// Getting the cksum received by the server.
+unsigned long SendingFile::getCksum() const {
+	return this->cksum;
 }
 
 int SendingFile::run(tcp::socket& sock) {
-	
+	// Sending all packets to the server.
 	for (packet_number = 1; packet_number <= total_packets; packet_number++) {
 		size_t amt_to_read = MIN(CONTENT_SIZE_PER_PACKET, content_size - (packet_number-1)*CONTENT_SIZE_PER_PACKET);
 		std::string content = encrypted_file_content.substr((packet_number - 1) * CONTENT_SIZE_PER_PACKET, amt_to_read);
-		setEncryptedContent(content.c_str());
+		setEncryptedContent(content);
 		
 		// Pack request fields into vector
 		std::vector<uint8_t> request = pack_sending_file_request();
@@ -364,6 +360,7 @@ int SendingFile::run(tcp::socket& sock) {
 			// Send the request to the server via the provided socket.
 			boost::asio::write(sock, boost::asio::buffer(request));
 		}
+		// If an error occurred, try sending the packet again.
 		catch (std::exception& e) {
 			std::cerr << e.what() << std::endl;
 			packet_number--;
@@ -399,12 +396,13 @@ int SendingFile::run(tcp::socket& sock) {
 		}
 
 		std::string response_file_name(response_payload.begin() + sizeof(uuid) + sizeof(content_size), response_payload.begin() + sizeof(uuid) + sizeof(content_size) + sizeof(file_name));
-		if (!file_names_match(response_file_name, file_name)) {
+		if (!file_names_match(response_file_name, file_name, sizeof(file_name))) {
 			throw std::invalid_argument("server responded with an error.");
 		}
 
 		// Copy the cksum content from the response_payload vector into the parameter cksum.
-		std::copy(response_payload.begin() + sizeof(uuid) + sizeof(content_size) + sizeof(file_name), response_payload.end(), this->cksum);
+		unsigned long response_cksum = getPayloadCksum(response_payload);
+		setCksum(response_cksum);
 	}
 	catch (std::exception& e) {
 		std::cerr << e.what() << std::endl;
@@ -449,7 +447,29 @@ uint32_t SendingFile::getPayloadContentSize(std::vector<uint8_t> payload) {
 						(static_cast<uint32_t>(third) << 8) | 
 						(static_cast<uint32_t>(last));
 
-	std::cout << "combined content size = " << combined << std::endl;
+	/*
+		This, in my opinion, isn't quite intuitive so I'll explain it a little:
+		By the way I define the 'combined' variable, I only insert it's value, meaning,
+		if the operating system operates by little-endian order, it'll reverse the bytes.
+		That being said, the value received is already in little-endian so we'll need to reverse them back.
+	*/
+	if (boost::endian::order::native == boost::endian::order::little) {
+		return boost::endian::endian_reverse(combined);
+	}
+
+	return combined;
+}
+
+uint32_t SendingFile::getPayloadCksum(std::vector<uint8_t> payload) {
+	size_t start = sizeof(uuid) + sizeof(content_size) + sizeof(file_name);
+
+	uint8_t first = payload[start], second = payload[start + 1];
+	uint8_t third = payload[start + 2], last = payload[start + 3];
+
+	uint32_t combined = (static_cast<uint32_t>(first) << 24) |
+		(static_cast<uint32_t>(second) << 16) |
+		(static_cast<uint32_t>(third) << 8) |
+		(static_cast<uint32_t>(last));
 
 	/*
 		This, in my opinion, isn't quite intuitive so I'll explain it a little:
@@ -458,7 +478,6 @@ uint32_t SendingFile::getPayloadContentSize(std::vector<uint8_t> payload) {
 		That being said, the value received is already in little-endian so we'll need to reverse them back.
 	*/
 	if (boost::endian::order::native == boost::endian::order::little) {
-		std::cout << "returning opposite of combined.\n";
 		return boost::endian::endian_reverse(combined);
 	}
 
@@ -475,7 +494,7 @@ ValidCrc::ValidCrc(UUID uuid, uint16_t code, uint32_t payload_size, const char f
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->file_name, 0, sizeof(this->file_name));
-	strncpy_s(this->file_name, file_name, amt);
+	memcpy(this->file_name, file_name, amt);
 }
 
 int ValidCrc::run(tcp::socket &sock) {
@@ -515,10 +534,10 @@ int ValidCrc::run(tcp::socket &sock) {
 		catch (std::exception& e) {
 			std::cerr << e.what() << std::endl;
 		}
-		// Increment the i by 1 each iteration.
+		// Increment by 1 each iteration.
 		times_sent++;
 	}
-	// If the i reached 3, return FAILURE.
+	// If reached 3, return FAILURE.
 	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}
@@ -548,7 +567,7 @@ SendingCrcAgain::SendingCrcAgain(UUID uuid, uint16_t code, uint32_t payload_size
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->file_name, 0, sizeof(this->file_name));
-	strncpy_s(this->file_name, file_name, amt);
+	memcpy(this->file_name, file_name, amt);
 }
 
 int SendingCrcAgain::run(tcp::socket &sock) {
@@ -589,7 +608,7 @@ InvalidCrcDone::InvalidCrcDone(UUID uuid, uint16_t code, uint32_t payload_size, 
 	size_t amt = (len >= NAME_SIZE) ? (NAME_SIZE - 1) : len;
 
 	memset(this->file_name, 0, sizeof(this->file_name));
-	strncpy_s(this->file_name, file_name, amt);
+	memcpy(this->file_name, file_name, amt);
 }
 
 // TODO: go over this and change to fit this request.
@@ -630,10 +649,10 @@ int InvalidCrcDone::run(tcp::socket &sock) {
 		catch (std::exception& e) {
 			std::cerr << e.what() << std::endl;
 		}
-		// Increment the i by 1 each iteration.
+		// Increment by 1 each iteration.
 		times_sent++;
 	}
-	// If the i reached 3, return FAILURE.
+	// If reached 3, return FAILURE.
 	if (times_sent == MAX_REQUEST_FAILS) {
 		return FAILURE;
 	}

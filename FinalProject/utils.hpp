@@ -29,7 +29,7 @@ const std::string EXE_DIR = "client.cpp\\..\\..\\x64\\debug";
 	((content_size % CONTENT_SIZE_PER_PACKET) ? (content_size/CONTENT_SIZE_PER_PACKET + 1) : content_size/CONTENT_SIZE_PER_PACKET)
 #define MIN(x, y) \
 	((x > y) ? x : y)
-#define RUNNING(code) (std::cout << "Running request code " << code << std::endl)
+#define RUNNING(code) (std::cout << "\nRunning request code " << code << std::endl)
 
 constexpr auto VERSION = 3;
 constexpr auto NAME_SIZE = 255;
@@ -55,11 +55,11 @@ uint32_t get_response_payload_size(std::vector<uint8_t> header);
 // This method receives two uuids, one as a vector and one as a boost::uuids::uuid type, and checks if they're identical.
 bool id_vectors_match(std::vector<uint8_t> first, UUID second);
 // This method checks if the two given file names are identical.
-bool file_names_match(std::string response_file_name, char file_name[]);
+bool file_names_match(std::string response_file_name, char file_name[], size_t file_length);
 // This method returns a boost::uuids::uuid representation of the given string client_id.
 UUID getUuidFromString(std::string client_id);
-// This method receives a file name, opens it in binary format and returns the entire file data as a string.
-std::string fileToString(std::string file_name);
+// This method receives a file name, opens it in binary format and returns the entire file data as a char array.
+std::string fileToCharArray(std::string file_name);
 
 enum PayloadSize: uint32_t {
 	REGISTRATION_P = 255,
