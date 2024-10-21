@@ -5,6 +5,7 @@ from utils import ReqState, requests_formats, encrypt_aes_key, RequestCodes, dec
 from requests_handling import requests_functions
 from responses import PAYLOAD_SIZES
 import responses
+import threading
 
 HEADER_SIZE = 23
 HEADER_FORMAT = "<16s B H I"
@@ -143,18 +144,19 @@ class Server:
                 return
         response.run(conn)
 
-    def run(self) -> None:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(self.get_addr())
+    def handle_client(self, conn, address):
+        """
+        Handle client communication in a separate thread.
 
-        sock.listen()
-        conn, address = sock.accept()
-
+        :param conn: The connection object responsible for transferring messages between the server and the client.
+        :param address: The client's address.
+        """
         while True:
-            print("\nwaiting for request!")
+            print(f"\nConnected to {address}. Waiting for request!")
             header = conn.recv(HEADER_SIZE)
 
             if len(header) == 0:
+                print(f"Client {address} disconnected.")
                 conn.close()
                 break
 
@@ -162,7 +164,21 @@ class Server:
             client_id, version, code, payload_size = unpacked_header
 
             print("code =", code)
+
             # Call a function to handle the client's request.
             response_code, unpacked_request_payload = self.handle_request(conn, client_id, RequestCodes(code),
                                                                           payload_size)
             self.handle_response(conn, client_id, response_code, unpacked_request_payload)
+
+    def run(self) -> None:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(self.get_addr())
+        sock.listen()
+
+        while True:
+            conn, address = sock.accept()
+            print(f"Accepted connection from {address}")
+
+            # Create a new thread for each client
+            client_thread = threading.Thread(target=self.handle_client, args=(conn, address))
+            client_thread.start()

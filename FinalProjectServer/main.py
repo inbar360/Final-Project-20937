@@ -1,4 +1,4 @@
-from FinalProjectServer.server import Server
+from server import Server
 
 HOST = '127.0.0.1'
 
