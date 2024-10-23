@@ -4,6 +4,8 @@ from utils import create_aes_key, create_uuid, create_directory, get_client_file
 from cksum import memcrc
 from Crypto.PublicKey import RSA
 
+MAX_PACK_LENGTH = 1024
+
 
 def handle_one_param(server, client_id: bytes, code: RequestCodes, unpacked_payload) -> ReqState:
     """
@@ -85,18 +87,20 @@ def handle_sending_file(server, client_id: bytes, code: RequestCodes, unpacked_p
 
     # Add the current packet's data. If all packets were received, decrypt, calc CRC and return response code 1603.
     client.add_packet_data(pack_num, content)
+
     if client.received_entire_file():
-        decrypt_file_calc_crc(client, client_id)
+        decrypt_file_calc_crc(client, client_id, content_size)
         return ReqState.FILE_RECEIVED_CRC
 
     # If not all packets were received, return response code indicating no response.
     return ReqState.AWAIT_PACKET
 
 
-def decrypt_file_calc_crc(client: Client, client_id: bytes) -> None:
+def decrypt_file_calc_crc(client: Client, client_id: bytes, content_size) -> None:
     """
     Decrypt the client's file and calculate CRC.
 
+    :param content_size:
     :param client: The client object.
     :param client_id: The client id corresponding to the provided client object.
     """
@@ -106,8 +110,9 @@ def decrypt_file_calc_crc(client: Client, client_id: bytes) -> None:
     create_directory(str_id)
     client_file_path: str = get_client_file_path(str_id, client.get_file_name())
     with open(client_file_path, 'wb') as client_file:
-        for packet_data in client.get_packets().values():
-            stripped_data = packet_data.strip(b'\0')
+        for pack_num, pack_data in client.get_packets().items():
+            amt_to_write = min(MAX_PACK_LENGTH, content_size - (pack_num-1)*MAX_PACK_LENGTH)
+            stripped_data = pack_data[:amt_to_write]
             client_file.write(stripped_data)
             size += len(stripped_data)
 
@@ -176,6 +181,7 @@ def reconnect(server, client_id: bytes, name: str) -> ReqState:
     # If the client is registered, create AES key, save it, and return successful reconnection state.
     aes_key = create_aes_key()
     server.get_client(client_id).set_aes_key(aes_key)
+    server.get_client(client_id).clear_dict()  # Clear the packet dictionary.
 
     return ReqState.RECONNECTED_SUCCESSFULLY
 
