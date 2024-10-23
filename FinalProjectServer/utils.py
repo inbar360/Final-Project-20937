@@ -92,10 +92,6 @@ def decrypt_file_using_aes_key(file_path: str, aes_key: bytes) -> bytes:
     cipher = AES.new(aes_key, AES.MODE_CBC, iv)
     padded_data = cipher.decrypt(encrypted_data)
 
-    # Debugging statements
-    print(f"Length of padded data: {len(padded_data)}")
-    print(f"Padded data (last byte): {padded_data[-1]}")
-
     decrypted_data = unpad(padded_data, AES.block_size)
 
     return decrypted_data
