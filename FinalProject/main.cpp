@@ -233,6 +233,9 @@ static void run_client(tcp::socket &sock, Client& client) {
 			// Get the encrypted AES key and decrypt it.
 			std::string encrypted_aes_key = reconnection.getEncryptedAesKey();
 			decrypted_aes_key = prevKeyWrapper.decrypt(encrypted_aes_key);
+
+			std::cout << "size of decr aes key - " << decrypted_aes_key.size() << std::endl;
+			std::cout << "aes key - \n'" << decrypted_aes_key << "'\n";
 		}
 	}
 
@@ -242,6 +245,7 @@ static void run_client(tcp::socket &sock, Client& client) {
 		// Get the file's content, save the encrypted content and save the sizes of both.
 		std::string content = fileToCharArray(client.getFilePath());
 		std::string encrypted_content = aesKeyWrapper.encrypt(content.c_str(), static_cast<unsigned int>(content.size()));
+
 		uint32_t content_size = static_cast<uint32_t>(encrypted_content.length());
 		uint32_t orig_size = static_cast<uint32_t>(content.size());
 

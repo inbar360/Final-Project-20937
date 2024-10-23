@@ -20,6 +20,8 @@ using boost::asio::ip::tcp;
 using UUID = boost::uuids::uuid;
 
 const std::string EXE_DIR = "client.cpp\\..\\..\\x64\\debug";
+
+// Macros used in the program.
 #define EXE_DIR_FILE_PATH(file_name) (EXE_DIR + "\\" + file_name)
 #define NIL_UUID boost::uuids::nil_uuid()
 #define FATAL_MESSAGE_RETURN(type) \
@@ -31,6 +33,7 @@ const std::string EXE_DIR = "client.cpp\\..\\..\\x64\\debug";
 	((x > y) ? x : y)
 #define RUNNING(code) (std::cout << "\nRunning request code " << code << std::endl)
 
+// Const variables used in the program.
 constexpr auto VERSION = 3;
 constexpr auto NAME_SIZE = 255;
 constexpr auto KEY_LENGTH = 160;
@@ -61,6 +64,7 @@ UUID getUuidFromString(std::string client_id);
 // This method receives a file name, opens it in binary format and returns the entire file data as a char array.
 std::string fileToCharArray(std::string file_name);
 
+// Enum used for distinguishing different requests/responses' payload sizes.
 enum PayloadSize: uint32_t {
 	REGISTRATION_P = 255,
 	SENDING_PUBLIC_KEY_P = 415,
@@ -80,6 +84,7 @@ enum PayloadSize: uint32_t {
 	GENERAL_ERROR_P = 0
 };
 
+// Enum used for distinguishing different requests/responses' codes.
 enum Codes: uint16_t {
 	REGISTRATION_C = 825,
 	SENDING_PUBLIC_KEY_C = 826,

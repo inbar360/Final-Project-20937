@@ -335,12 +335,6 @@ void SendingFile::setCksum(unsigned long cksum) {
 	this->cksum = cksum;
 }
 
-// Getting the current packets encrypted content in string form.
-std::string SendingFile::getEncryptedContent() const {
-	std::string str_encrypted_content(this->encrypted_content, this->encrypted_content + sizeof(this->encrypted_content));
-	return str_encrypted_content;
-}
-
 // Getting the cksum received by the server.
 unsigned long SendingFile::getCksum() const {
 	return this->cksum;

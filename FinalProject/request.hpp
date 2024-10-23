@@ -40,6 +40,7 @@ class SendingPublicKey : public Request {
 
 	public:
 		SendingPublicKey(UUID uuid, uint16_t code, uint32_t payload_size, const char name[], std::string public_key);
+		// Receive the encrypted AES key received by the server during the "Received Public key response" - 1602.
 		std::string getEncryptedAesKey() const;
 
 		// This method runs the Sending Public Key request and gets the server's response.
@@ -54,6 +55,7 @@ class Reconnection : public Request {
 
 	public:
 		Reconnection(UUID uuid, uint16_t code, uint32_t payload_size, const char name[]);
+		// Receive the encrypted AES key received by the server during the "Reconnection Succeeded" - 1605.
 		std::string getEncryptedAesKey() const;
 
 		// This method runs the Reconnection request and gets the server's response.
@@ -74,9 +76,11 @@ class SendingFile : public Request {
 
 	public:
 		SendingFile(UUID uuid, uint16_t code, uint32_t payload_size, uint32_t content_size, uint32_t orig_file_size, uint16_t total_packets, const char file_name[], std::string encrypted_file_content);
+		// Set the encrypted data for the current packet.
 		void setEncryptedContent(std::string encrypted_content);
+		// Set the cksum.
 		void setCksum(unsigned long cksum);
-		std::string getEncryptedContent() const;
+		// Receive the cksum received by the server during the "File received CRC" response - 1603.
 		unsigned long getCksum() const;
 
 		// This method runs the Sending File request and gets the server's response.
