@@ -36,9 +36,6 @@
     <ClCompile Include="RSAWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="testing.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cksum.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
