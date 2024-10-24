@@ -233,9 +233,6 @@ static void run_client(tcp::socket &sock, Client& client) {
 			// Get the encrypted AES key and decrypt it.
 			std::string encrypted_aes_key = reconnection.getEncryptedAesKey();
 			decrypted_aes_key = prevKeyWrapper.decrypt(encrypted_aes_key);
-
-			std::cout << "size of decr aes key - " << decrypted_aes_key.size() << std::endl;
-			std::cout << "aes key - \n'" << decrypted_aes_key << "'\n";
 		}
 	}
 
