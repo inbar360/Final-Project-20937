@@ -1,3 +1,5 @@
+import os.path
+
 from clients import Client
 from utils import decodes_utf8, ReqState, RequestCodes, decrypt_file_using_aes_key
 from utils import create_aes_key, create_uuid, create_directory, get_client_file_path, remove_client_file
@@ -108,7 +110,8 @@ def decrypt_file_calc_crc(client: Client, client_id: bytes, content_size) -> Non
     str_id: str = client_id.hex()
     size = 0
     create_directory(str_id)
-    client_file_path: str = get_client_file_path(str_id, client.get_file_name())
+    existing_file_name = os.path.basename(client.get_file_name())
+    client_file_path: str = get_client_file_path(str_id, existing_file_name)
     with open(client_file_path, 'wb') as client_file:
         for pack_num, pack_data in client.get_packets().items():
             amt_to_write = min(MAX_PACK_LENGTH, content_size - (pack_num-1)*MAX_PACK_LENGTH)
@@ -209,7 +212,8 @@ def crc_requests(server, client_id: bytes, code: RequestCodes, file_name: str) -
     if code == RequestCodes.INVALID_CRC_SENDING_AGAIN or code == RequestCodes.FOURTH_TIME_INVALID_CRC:
         str_id = decodes_utf8(client_id)
         client = server.get_client(client_id)
-        path = get_client_file_path(str_id, client.get_file_name())
+        existing_file_name = os.path.basename(client.get_file_name())
+        path = get_client_file_path(str_id, existing_file_name)
         remove_client_file(path)
 
     # If the request is 901 - 'Invalid CRC, sending again', no response is needed.
