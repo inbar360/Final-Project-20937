@@ -47,7 +47,7 @@ def handle_sending_public_key(server, client_id: bytes, code: RequestCodes, unpa
     print("got to handle sending public key!")
 
     name_in_bytes, public_key = unpacked_payload
-    name = decodes_utf8(name_in_bytes)
+    name: str = decodes_utf8(name_in_bytes)
 
     # If the client name and id don't match in the dictionary, return general error.
     if not server.client_registered(client_id, name):
@@ -80,7 +80,7 @@ def handle_sending_file(server, client_id: bytes, code: RequestCodes, unpacked_p
 
     content_size, orig_size, pack_num, tot_packets, file_name_bytes, content = unpacked_payload
     client: Client = server.get_client(client_id)
-    file_name = decodes_utf8(file_name_bytes)
+    file_name: str = decodes_utf8(file_name_bytes)
 
     # If it's the first instance of request 828 - save file name and total packets.
     if client.get_file_name() is None:
@@ -210,7 +210,7 @@ def crc_requests(server, client_id: bytes, code: RequestCodes, file_name: str) -
 
     # delete user file if the crc was incorrect.
     if code == RequestCodes.INVALID_CRC_SENDING_AGAIN or code == RequestCodes.FOURTH_TIME_INVALID_CRC:
-        str_id = decodes_utf8(client_id)
+        str_id = client_id.decode('utf-8', 'ignore')
         client = server.get_client(client_id)
         existing_file_name = os.path.basename(client.get_file_name())
         path = get_client_file_path(str_id, existing_file_name)

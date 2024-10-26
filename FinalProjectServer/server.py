@@ -107,7 +107,7 @@ class Server:
 
         match code:
             case ReqState.REGISTERED_SUCCESSFULLY:
-                name = decodes_utf8(unpacked_request_payload[0])
+                name: str = decodes_utf8(unpacked_request_payload[0])
                 get_id = self.get_uuid_by_name(name)
                 response = responses.RegistrationSucceeded(code_int, PAYLOAD_SIZES[code_int],
                                                            client_id=get_id)
@@ -134,7 +134,7 @@ class Server:
                 enc_aes_key = encrypt_aes_key(aes_key, pub_key)
                 response = responses.ReconnectionSucceeded(code_int, PAYLOAD_SIZES[code_int], client_id, enc_aes_key)
             case ReqState.NOT_REGISTERED_OR_INVALID_KEY:
-                name = decodes_utf8(unpacked_request_payload[0])
+                name: str = decodes_utf8(unpacked_request_payload[0])
                 get_id = self.get_uuid_by_name(name)
                 response = responses.ReconnectionFailed(code_int, PAYLOAD_SIZES[code_int],
                                                         client_id=get_id)
