@@ -9,6 +9,7 @@ import threading
 
 HEADER_SIZE = 23
 HEADER_FORMAT = "<16s B H I"
+client_dict_lock = threading.Lock()
 
 
 class Server:
@@ -32,40 +33,47 @@ class Server:
 
     # This function returns the registered client with the provided UUID.
     def get_client(self, client_id: bytes) -> Client:
-        return self._clients[client_id]
+        with client_dict_lock:
+            return self._clients[client_id]
 
     def get_uuid_by_name(self, name: str) -> bytes | None:
-        for uid in self._clients.keys():
-            if self._clients[uid].get_name() == name:
-                return uid
+        with client_dict_lock:
+            for uid in self._clients.keys():
+                if self._clients[uid].get_name() == name:
+                    return uid
         return None
 
     # Adds a Client object with the given name to the clients dictionary, using the provided UUID as the key.
     def add_client(self, client_name: str, uuid: bytes) -> None:
-        self._clients[uuid] = Client(client_name)
+        with client_dict_lock:
+            self._clients[uuid] = Client(client_name)
 
     # This function removes the client with the provided fields if exists.
     def remove_client_if_registered(self, client_id: bytes, client_name: str) -> None:
         if self.client_registered(client_id, client_name):
-            self._clients.pop(client_id)
+            with client_dict_lock:
+                self._clients.pop(client_id)
 
     # This function checks if the client with the given name has already been registered.
     def name_already_registered(self, client_name: str) -> bool:
-        for client in self._clients.values():
-            if client.get_name() == client_name:
-                return True
+        with client_dict_lock:
+            for client in self._clients.values():
+                if client.get_name() == client_name:
+                    return True
         return False
 
     # This function checks if the server has a registered client with the provided UUID.
     def client_id_registered(self, client_id: bytes) -> bool:
-        if client_id in self._clients.keys():
-            return True
+        with client_dict_lock:
+            if client_id in self._clients.keys():
+                return True
         return False
 
     # This function checks if the server has a registered client with both provided fields.
     def client_registered(self, client_id: bytes, client_name: str) -> bool:
         if self.client_id_registered(client_id):
-            return self._clients[client_id].get_name() == client_name
+            with client_dict_lock:
+                return self._clients[client_id].get_name() == client_name
         return False
 
     def handle_request(self, conn: socket.socket, client_id: bytes, code: RequestCodes, payload_size: int) -> \
